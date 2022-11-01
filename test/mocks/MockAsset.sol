@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
+import "forge-std/console.sol";
 import '../../src/interfaces/IAssetClass.sol';
 
 // used for testing

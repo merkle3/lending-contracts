@@ -113,6 +113,8 @@ contract Controller is Ownable, Pausable, IController {
         // calculate 80% of collateral
         uint256 maxBorrow = totalCollateral * maxCollateralUsability / 10_000;
 
+        console.log("hello its me");
+
         return totalBorrow <= maxBorrow;
     }
 

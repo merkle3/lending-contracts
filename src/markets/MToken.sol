@@ -243,17 +243,11 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
     /// @param amountUnderlying the amount to borrow
     /// @param receiver the account to receive the loaned underlying amount
     function borrow(uint256 amountUnderlying, address receiver) override external updateReward(msg.sender) whenNotPaused {
-        // calculate reserves
-        this.accrueInterest();
-
         // check if there is enough cash
         require(cashReserves >= amountUnderlying, "NO_RESERVES");
 
         // don't send to zero address
         require(receiver != address(0), "INVALID_RECEIVER");
-
-        // you can only borrow at least 1 token
-        require(amountUnderlying > tokenScale, "INVALID_AMOUNT");
         
         // get the current borrow rate
         uint borrowRate = getBorrowRate();

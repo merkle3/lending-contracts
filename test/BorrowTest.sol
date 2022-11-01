@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >= 0.5.0;
 
-import {console} from "forge-std/console.sol";
+import "forge-std/console.sol";
+import {FixedPointMathLib} from '../src/libraries/FixedPointMathLib.sol';
 import "forge-std/Test.sol";
 import "../src/markets/MToken.sol";
 import "../src/Controller.sol";
@@ -18,6 +19,8 @@ contract MTokenTest is Test {
     BaseInterestModel public interestModel;
     MockERC20 public mockToken;
     MockV3Aggregator public mockOracle;
+
+    using FixedPointMathLib for uint256;
 
     function setUp() public {
         controller = new Controller();
@@ -50,7 +53,7 @@ contract MTokenTest is Test {
     }
 
     function testBorrowWithoutCollateral(uint amount) public {
-        vm.assume(amount > 1 * Constant.ONE);
+        vm.assume(amount > 0);
         vm.assume(amount < 10_000 * Constant.ONE);
 
         vm.expectRevert(bytes("NOT_HEALTHY"));
@@ -73,28 +76,31 @@ contract MTokenTest is Test {
     }
 
     function testBorrow(uint amount) public {
-        vm.assume(amount > 1 * Constant.ONE);
-        vm.assume(amount < 10_000 * Constant.ONE);
+        vm.assume(amount > 0);
+        vm.assume(amount < 10_000);
+
+        // provider the collateral
+        mockAsset.setAmountUsd(amount);
+
+        // try to borrow less than 80% of the collateral
+        uint borrowAmount = amount.mulDivDown(8_000, 10_000);
+
+        tokenMarket.borrow(borrowAmount * Constant.ONE, msg.sender);
+
+        // check that we received the funds
+        assertEq(mockToken.balanceOf(msg.sender), borrowAmount * Constant.ONE);
+    }
+
+    function testBorrowTooMuch() public {
+        uint amount = 1_000;
 
         mockAsset.setAmountUsd(amount);
 
-        // try to borrow less than 2000 USDC
-        tokenMarket.borrow(amount, msg.sender);
-
-        // check that we received the funds
-        assertEq(mockToken.balanceOf(msg.sender), amount);
-    }
-
-    function testBorrowTooMuch(uint amount) public {
-        console.log("hello1");
-        vm.assume(amount > 1 * Constant.ONE);
-        vm.assume(amount < 10_000 * Constant.ONE);
+        uint borrowAmount = amount.mulDivDown(8_000, 10_000) + 1;
 
         vm.expectRevert(bytes("NOT_HEALTHY"));
 
-        mockAsset.setAmountUsd(amount);
-
-        // try to borrow less than 2000 USDC
-        tokenMarket.borrow(amount + 1, msg.sender);
+        // try to borrow more than collateral
+        tokenMarket.borrow(borrowAmount * Constant.ONE, msg.sender);
     }
 }
