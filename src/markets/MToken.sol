@@ -253,9 +253,6 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
 
         // don't send to zero address
         require(receiver != address(0), "INVALID_RECEIVER");
-
-        // don't borrow ourselves
-        require(msg.sender != address(this), "INVALID_BORROWER");
         
         // get the current borrow rate
         uint borrowRate = getBorrowRate();
@@ -293,7 +290,7 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
         uint rate = getBorrowRate();
 
         // get the loan shares that are being repayed
-        uint borrowShares = amountUnderlying * expScale / rate;
+        uint borrowShares = amountUnderlying.mulDivUp(expScale, rate);
 
         // prevent overpaying
         require(borrowed[account] >= borrowShares, "OVER_PAID");
@@ -306,18 +303,11 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
         totalBorrows = totalBorrows.sub(amountUnderlying);
 
         // update cash reserves
-        cashReserves += amountUnderlying;
+        cashReserves = cashReserves.add(amountUnderlying);
 
         // update user's borrow
-
-        borrowed[account] -= borrowShares;
-
-        // prevent underflow
-        if (totalBorrowShares < borrowShares) {
-            totalBorrowShares = 0;
-        } else {
-            totalBorrowShares -= borrowShares;
-        }
+        borrowed[account] = borrowed[account].sub(borrowShares);
+        totalBorrowShares = totalBorrowShares.sub(borrowShares);
     }
 
     /// @notice repay shares instead of underlying asset
