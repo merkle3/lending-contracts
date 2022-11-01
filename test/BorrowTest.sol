@@ -91,8 +91,9 @@ contract MTokenTest is Test {
         assertEq(mockToken.balanceOf(msg.sender), borrowAmount * Constant.ONE);
     }
 
-    function testBorrowTooMuch() public {
-        uint amount = 1_000;
+    function testBorrowTooMuch(uint amount) public {
+        vm.assume(amount > 0);
+        vm.assume(amount < 10_000);
 
         mockAsset.setAmountUsd(amount);
 
