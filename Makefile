@@ -1,2 +1,7 @@
+.PHONY: test snapshot
+
 test:
-	forge test -vvv --gas-snapshot
+	forge test -vvv
+
+snapshot:
+	forge snapshot
