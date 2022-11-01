@@ -1,0 +1,7 @@
+ControllerTest:testEmptyColletarls(address) (runs: 256, μ: 12685, ~: 12685)
+ControllerTest:testEmptyRewards(address) (runs: 256, μ: 7994, ~: 7994)
+ControllerTest:testSetPlatformFee(uint256) (runs: 256, μ: 13423, ~: 13705)
+ControllerTest:testSetup() (gas: 13454)
+MTokenTest:testAddFakeAssetClass() (gas: 184669)
+MTokenTest:testAddMarket() (gas: 59230)
+MTokenTest:testSetup() (gas: 15610)
