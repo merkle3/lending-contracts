@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
+import "forge-std/console.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeTransferLib} from "../libraries/SafeTransferLib.sol";
 
@@ -11,6 +12,7 @@ import {IController} from '../interfaces/IController.sol';
 import {IInterestModel} from '../interest/IInterestModel.sol';
 import {Rewards} from '../rewards/Rewards.sol';
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC3156FlashBorrower} from '../interfaces/IERC3156FlashBorrower.sol';
 import {IERC3156FlashLender} from '../interfaces/IERC3156FlashLender.sol';
@@ -20,6 +22,7 @@ import {FixedPointMathLib} from '../libraries/FixedPointMathLib.sol';
 contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
+    using SafeMath for uint;
 
     // oracle for the underlying asset
     address public immutable oracle;
@@ -37,7 +40,7 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
     uint public cashReserves;
     
     // borrowed shares by address
-    mapping(address => uint) borrowed;
+    mapping(address => uint) public borrowed;
 
     // controller
     address _controller;
@@ -165,6 +168,8 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
     /// @notice how much of the reward is owned by the user
     /// @param account the user whose reward to check
     function rewardSupplyBasis(address account) external virtual override returns (uint256) {
+        this.accrueInterest();
+
         return convertToAssets(balanceOf(account)) + this.getBorrowBalance(account);
     }
 
@@ -172,17 +177,17 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
 
     /// @notice accrue interest over all loands 
     // that the vault gave out
-    function accrueInterest() external {
+    function accrueInterest() external returns(uint interestedCharged) {
         if (block.timestamp == lastAccrualOfInterest) {
             // no update to be made
-            return;
+            return 0;
         }
 
         if(totalBorrows == 0) {
             // no borrows, no interest
-            return;
+            return 0;
         }
-        
+
         // get the current APY
         uint currentAPY = this.getInterest();
 
@@ -230,7 +235,7 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
             return expScale;
         }
 
-        uint borrowExchangeRate = totalBorrows * expScale / totalBorrowShares;
+        uint borrowExchangeRate = totalBorrows.mulDivUp(expScale, totalBorrowShares);
 
         return borrowExchangeRate;
     }
@@ -248,6 +253,9 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
 
         // don't send to zero address
         require(receiver != address(0), "INVALID_RECEIVER");
+
+        // don't borrow ourselves
+        require(msg.sender != address(this), "INVALID_BORROWER");
         
         // get the current borrow rate
         uint borrowRate = getBorrowRate();
@@ -294,14 +302,22 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
         asset.safeTransferFrom(account, address(this), amountUnderlying);
 
         // update total borrow
-        totalBorrows -= amountUnderlying;
+        // prevent underflow
+        totalBorrows = totalBorrows.sub(amountUnderlying);
 
         // update cash reserves
         cashReserves += amountUnderlying;
 
         // update user's borrow
+
         borrowed[account] -= borrowShares;
-        totalBorrowShares -= borrowShares;
+
+        // prevent underflow
+        if (totalBorrowShares < borrowShares) {
+            totalBorrowShares = 0;
+        } else {
+            totalBorrowShares -= borrowShares;
+        }
     }
 
     /// @notice repay shares instead of underlying asset
@@ -318,8 +334,13 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
         uint rate = getBorrowRate();
 
         // calculate how much it will be
-        uint amountUnderlying = shares * rate / expScale;
+        uint amountUnderlying = shares.mulDivUp(rate, expScale);
 
+        // prevent underflow
+        if (amountUnderlying > totalBorrows) {
+            amountUnderlying = totalBorrows;
+        }
+        
         // prevent overpaying
         require(borrowed[account] >= shares, "OVER_PAID");
 
@@ -327,14 +348,14 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
         asset.safeTransferFrom(account, address(this), amountUnderlying);
 
         // update total borrow
-        totalBorrows -= amountUnderlying;
+        totalBorrows = totalBorrows.sub(amountUnderlying);
 
         // update cash reserves
-        cashReserves += amountUnderlying;
+        cashReserves = cashReserves.add(amountUnderlying);
 
         // update user's borrow
-        borrowed[account] -= shares;
-        totalBorrowShares -= shares;
+        borrowed[account] =  borrowed[account].sub(shares);
+        totalBorrowShares = totalBorrowShares.sub(shares);
     }
 
     // ------- Deposit functions -------
