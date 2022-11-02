@@ -140,9 +140,9 @@ contract Controller is Ownable, Pausable, IController {
     function getPendingRewards(address account) external view returns (uint256 totalRewards) {
         totalRewards = 0;
 
-        for(uint24 i = 0; i < assetClassesList.length; i++) {
+        for(uint24 i = 0; i < tokenMarketsList.length; i++) {
             // add up all the collateral from all asset classes
-            totalRewards += Rewards(assetClassesList[i]).getPendingRewards(account);
+            totalRewards += Rewards(tokenMarketsList[i]).getPendingRewards(account);
         }
     }
 
