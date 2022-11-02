@@ -1,5 +1,4 @@
 ![Logo](public/logo.png)
-
 # Merkle lending
 
 Merkle is a new kind of lending platform that can accomodate much more complicated assets than Aave or Compound.
