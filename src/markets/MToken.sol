@@ -76,7 +76,7 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
         // reward 4M tokens over 5 years
         // 5 years = 157680000 seconds
         /// 5M = 5000000000000000000000000 WEI
-    ) ERC4626(ERC20(assetAddress), "Merkle USDC", "mUSDC") Rewards(ERC20(address(0)), 5000000000000000000000000, 157680000) {
+    ) ERC4626(ERC20(assetAddress), "Merkle USDC", "mUSDC") Rewards(ERC20(address(0)), block.timestamp, 5000000000000000000000000, 157680000) {
         _controller = controller;
         lastAccrualOfInterest = block.timestamp;
         oracle = _oracle;

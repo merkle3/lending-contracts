@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
+import "forge-std/console.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
 import {SafeTransferLib} from "../libraries/SafeTransferLib.sol";
@@ -49,9 +50,9 @@ abstract contract Rewards {
     /// @param _rewardToken the reward token
     /// @param _totalRewards the total rewards
     /// @param _rewardDuration the period of rewards
-    constructor(ERC20 _rewardToken, uint256 _totalRewards, uint256 _rewardDuration) {
+    constructor(ERC20 _rewardToken, uint256 start, uint256 _totalRewards, uint256 _rewardDuration) {
         // start now
-        startTimestamp = block.timestamp;
+        startTimestamp = start;
 
         rewardToken = _rewardToken;
         rewardPerSecond = _totalRewards / _rewardDuration;
@@ -69,10 +70,17 @@ abstract contract Rewards {
     /// @notice update the rewards for an account
     /// @param account the account to update
     modifier updateReward(address account) {
-        if(block.timestamp < startTimestamp || block.timestamp > endTimestamp) {
+        if(block.timestamp < startTimestamp || lastRewardTimestamp > endTimestamp) {
             // no rewards outside of period
             _;
         } else {
+            // we bound the rewards to the end timestamp
+            uint256 endBoundTimestamp = block.timestamp;
+
+            if (endBoundTimestamp > endTimestamp) {
+                endBoundTimestamp = endTimestamp;
+            }
+
             // calculate reward
             uint256 secondsDelta = block.timestamp - lastRewardTimestamp;
 
