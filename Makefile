@@ -5,3 +5,7 @@ test:
 
 snapshot:
 	forge snapshot
+
+cov: lcov.info
+lcov.info: 
+	forge coverage --report lcov

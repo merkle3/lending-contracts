@@ -27,74 +27,65 @@ contract MTokenTest is Test {
     }
 
     function testRewardZero() public {
-        rewarder.setSupply(0);
-
-        rewarder.setAccountSupply(address(0), 0);
-
-        rewarder.update(address(0));
+        rewarder.setAccountSupply(address(0), 0, 0);
 
         // lets warp
         vm.warp(block.timestamp + 3600);
-
-        rewarder.update(address(0));
 
         assertEq(rewarder.getPendingRewards(address(0)), 0);
     }
 
-    function testFullRewards() public {
-        rewarder.setSupply(1);
+    function testFullRewards(uint amount) public {
+        // we set contrains on the amount of supply to test
+        // the accuracy of the system
+        vm.assume(amount > 0);
+        // max 1 trillion units
+        vm.assume(amount < 1_000_000_000_000 * Constant.ONE);
 
-        rewarder.setAccountSupply(address(0), 1);
-
-        rewarder.update(address(0));
-
-        // lets warp
-        vm.warp(block.timestamp + 3600);
-
-        rewarder.update(address(0));
-
-        assertEq(rewarder.getPendingRewards(address(0)), 360_000 * Constant.ONE);
-    }
-
-    function testHalfHalfRewards() public {
-        rewarder.setSupply(2);
-
-        rewarder.setAccountSupply(address(0), 1);
-        rewarder.setAccountSupply(address(1), 1);
-
-        rewarder.update(address(0));
-        rewarder.update(address(1));
+        rewarder.setAccountSupply(address(0), amount, amount);
 
         // lets warp
         vm.warp(block.timestamp + 3600);
 
-        rewarder.update(address(0));
-        rewarder.update(address(1));
-
-        assertEq(rewarder.getPendingRewards(address(0)), 360_000 / 2 * Constant.ONE);
-        assertEq(rewarder.getPendingRewards(address(1)), 360_000 / 2 * Constant.ONE);
+        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), rewarder.totalRewards(), 10_000);
     }
 
-    function Joinhalfway() public {
-        rewarder.setSupply(1);
+    function testHalfHalfRewards(uint amount) public {
+        // we set contrains on the amount of supply to test
+        // the accuracy of the system
+        vm.assume(amount > 0);
+        // max 1 trillion units
+        vm.assume(amount < 1_000_000_000_000 * Constant.ONE);
 
-        rewarder.setAccountSupply(address(0), 1);
+        rewarder.setAccountSupply(address(0), amount, amount);
+        rewarder.setAccountSupply(address(1), amount, amount*2);
+
+        // lets warp
+        vm.warp(block.timestamp + 3600);
+
+        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 2 * Constant.ONE, 10_000);
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 2 * Constant.ONE, 10_000);
+    }
+
+    function testJoinhalfway(uint amount) public {
+        // we set contrains on the amount of supply to test
+        // the accuracy of the system
+        vm.assume(amount > 0);
+        // max 1 trillion units
+        vm.assume(amount < 1_000_000_000_000 * Constant.ONE);
+
+        rewarder.setAccountSupply(address(0), amount, amount);
         rewarder.update(address(0));
 
         // warp half
         vm.warp(block.timestamp + 1800);
 
-        rewarder.setSupply(2);
-        rewarder.setAccountSupply(address(1), 1);
-        rewarder.update(address(1));
+        rewarder.setAccountSupply(address(1), amount, amount*2);
 
         // warp half
         vm.warp(block.timestamp + 1800);
 
-        rewarder.update(address(0));
-        rewarder.update(address(1));
-
-        assertEq(rewarder.getPendingRewards(address(0)), 360_000 / 4 * 3 * Constant.ONE);
-        assertEq(rewarder.getPendingRewards(address(1)), 360_000 / 4 * 1 * Constant.ONE);
+        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 4 * 3 * Constant.ONE, 10_000);
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 4 * 1 * Constant.ONE, 10_000);
     }
 } 

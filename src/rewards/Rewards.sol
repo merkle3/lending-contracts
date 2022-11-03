@@ -17,13 +17,16 @@ abstract contract Rewards {
     uint256 public rewardPerSecond;
 
     // total reward to distribute
-    uint256 public totalReward;
+    uint256 public totalRewards;
 
     // the timestamp when reward started
     uint256 public startTimestamp;
     
     // the timestamp when reward ends
     uint256 public endTimestamp;
+
+    // we scale up rewards per share for much more accuracy on small time scales
+    uint256 private rewardExpScale = 1e45;
 
     // user info
     struct UserInfo {
@@ -56,9 +59,24 @@ abstract contract Rewards {
 
         rewardToken = _rewardToken;
         rewardPerSecond = _totalRewards / _rewardDuration;
+        totalRewards = rewardPerSecond * _rewardDuration;
         endTimestamp = startTimestamp + _rewardDuration;
         lastRewardTimestamp = startTimestamp;
     }
+
+    /// @notice calculate the amount of reward per share over a time period
+    /// @param timeDelta the time period
+    /// @return totalRewardForDelta amount of reward per share
+    function rewardsPerShareForTimeDelta(uint256 timeDelta) internal returns (uint256 totalRewardForDelta) {
+        // calculate the rewards per share
+        uint256 totalSupply = this.totalRewardSupplyBasis();
+
+        if (totalSupply != 0) {
+            totalRewardForDelta = timeDelta.mulDivDown(rewardPerSecond * rewardExpScale, totalSupply);
+        } else {
+            totalRewardForDelta = timeDelta * rewardPerSecond;
+        }
+    }  
 
     // a function that returns the total reward supply
     function totalRewardSupplyBasis() external virtual returns (uint256);
@@ -113,23 +131,9 @@ abstract contract Rewards {
         }
     }
 
-    function rewardsPerShareForTimeDelta(uint256 timeDelta) internal returns (uint256) {
-        // calculate the rewards per share
-        uint256 totalSupply = this.totalRewardSupplyBasis();
-
-        // the total reward in that period
-        uint256 totalRewardForDelta = timeDelta * rewardPerSecond;
-
-        if (totalSupply == 0) {
-            return totalRewardForDelta;
-        } else {
-            return totalRewardForDelta / totalSupply;
-        }
-    }  
-
     /// @notice return the pending rewards
     /// @param account the account to check
-    function getPendingRewards(address account) external virtual view returns (uint256) {
+    function getPendingRewards(address account) external virtual updateReward(msg.sender) returns (uint256) {
         // check the user info
         UserInfo storage user = userInfo[account];
 
@@ -137,13 +141,13 @@ abstract contract Rewards {
         uint256 owned = user.shares * rewardsPerShare - user.rewardDistributed;
 
         // return the owned shares
-        return owned;
+        return owned / rewardExpScale;
     }
 
     /// @notice allows an account to claim the rewards
     /// @param rewardAmount the shares of rewards to claim
     /// @param recipient the recipient of the rewards
-    function claimRewards(uint256 rewardAmount, address recipient) external virtual updateReward(msg.sender) {
+    function claimRewards(uint256 rewardAmount, address recipient) external virtual {
         // the user info
         UserInfo storage user = userInfo[msg.sender];
 

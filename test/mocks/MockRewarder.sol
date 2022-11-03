@@ -11,16 +11,12 @@ contract MockRewarder is Rewards {
     mapping(address => uint256) public supplyForAccount;
 
     constructor(ERC20 token, uint256 start, uint256 total, uint256 duration) Rewards(token, start, total, duration) {
-        totalSupply = 1_000;
+        totalSupply = 0;
     }
 
-    // set 
-    function setSupply(uint256 _totalSupply) public {
-        totalSupply = _totalSupply;
-    }
-
-    function setAccountSupply(address account, uint256 _supply) public {
+    function setAccountSupply(address account, uint256 _supply, uint256 total) updateReward(account) public {
         supplyForAccount[account] = _supply;
+        totalSupply = total;
     }
 
     function rewardSupplyBasis(address account) external override view returns (uint256) {

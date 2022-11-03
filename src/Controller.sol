@@ -137,7 +137,7 @@ contract Controller is Ownable, Pausable, IController {
 
     /// @notice pending rewards from all vaults
     /// @param account the account
-    function getPendingRewards(address account) external view returns (uint256 totalRewards) {
+    function getPendingRewards(address account) external returns (uint256 totalRewards) {
         totalRewards = 0;
 
         for(uint24 i = 0; i < tokenMarketsList.length; i++) {
