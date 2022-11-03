@@ -1,4 +1,7 @@
 ![Logo](public/logo.png)
+
+![Test](https://shields.io/github/workflow/status/merkle3/lending-contracts/test)
+
 # Merkle lending
 
 Merkle is a new kind of lending platform that can accomodate much more complicated assets than Aave or Compound.
