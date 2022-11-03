@@ -132,8 +132,6 @@ abstract contract Rewards {
 
             // if the user reduced their share
             if(user.shares != 0 && user.shares > shares) {
-                console.log("lowering shares ", account);
-
                 // the user has earned rewards
                 uint256 earnedRewards = (rewardsPerShare * (user.shares - shares)) / rewardExpScale;
 
@@ -143,8 +141,6 @@ abstract contract Rewards {
 
             // if the user increased their shares
             if(user.shares != 0 && user.shares < shares) {
-                console.log("upping shares ", account);
-
                 // the user has earned rewards
                 uint256 earnedRewards = (rewardsPerShare * user.shares) / rewardExpScale;
 

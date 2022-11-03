@@ -186,13 +186,13 @@ contract MTokenTest is Test {
         rewarder.setAccountSupply(address(0), amount*2, amount*2);
         rewarder.setAccountSupply(address(1), amount*2, amount*4);
 
-        // warp a quarter
+        // warp a half
         vm.warp(block.timestamp + 3600/2);
 
         rewarder.setAccountSupply(address(0), amount*1, amount*3);
         rewarder.setAccountSupply(address(1), amount*3, amount*4);
 
-        // warp a quarter
+        // warp a half
         vm.warp(block.timestamp + 3600/2);
 
         //      50%                             50%             
