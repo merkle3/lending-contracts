@@ -4,7 +4,6 @@
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
-[submodule "lib/openzeppelin-contracts"]
 	branch = release-v3.4-solc-0.7
 [submodule "lib/v3-core"]
 	path = lib/v3-core

@@ -1,6 +1,6 @@
 ![Logo](public/logo.png)
 
-![Test](https://shields.io/github/workflow/status/merkle3/lending-contracts/test)
+![Test](https://shields.io/github/workflow/status/merkle3/lending-contracts/test) ![Social](https://img.shields.io/github/stars/merkle3/lending-contracts)
 
 # Merkle lending
 
