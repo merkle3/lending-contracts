@@ -35,6 +35,10 @@ abstract contract Rewards {
         // the shares of reward has claimed
         // or reward that were earned before the user joined
         uint256 rewardDistributed; 
+        // rewards owed to the user, but not yet distributed
+        // this happens if the user reduces their share
+        // amount
+        uint256 owedRewards;
     }
 
     // user info map
@@ -126,6 +130,14 @@ abstract contract Rewards {
                 user.rewardDistributed = rewardsPerShare * shares;
             }
 
+            if(user.shares != 0 && user.shares > shares) {
+                // the user has earned rewards
+                uint256 earnedRewards = (rewardsPerShare * user.shares) / rewardExpScale;
+
+                // add the earned rewards to the owed rewards
+                user.owedRewards += earnedRewards;
+            }
+
             // update the shares
             user.shares = shares;
         }
@@ -138,10 +150,10 @@ abstract contract Rewards {
         UserInfo storage user = userInfo[account];
 
         // the current reward per share minus the reward debt
-        uint256 owned = user.shares * rewardsPerShare - user.rewardDistributed;
+        uint256 owned = user.shares.mulDivDown(rewardsPerShare, rewardExpScale) - (user.rewardDistributed/rewardExpScale);
 
         // return the owned shares
-        return owned / rewardExpScale;
+        return owned + user.owedRewards;
     }
 
     /// @notice allows an account to claim the rewards
@@ -159,6 +171,9 @@ abstract contract Rewards {
 
         // update the reward balance
         user.rewardDistributed += rewardAmount;
+
+        // update the owed rewards
+        user.owedRewards == 0;
 
         // transfer the rewards
         rewardToken.safeTransfer(recipient, rewardAmount);

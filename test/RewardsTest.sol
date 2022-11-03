@@ -89,8 +89,34 @@ contract MTokenTest is Test {
         assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 4 * 1 * Constant.ONE, 10_000);
     }
 
+    function testExitHalfway(uint256 amount) public {
+        // we set contrains on the amount of supply to test
+        // the accuracy of the system
+        vm.assume(amount > 0);
+        // max 1 trillion units
+        vm.assume(amount < 1_000_000_000_000 * Constant.ONE);
+
+        rewarder.setAccountSupply(address(0), amount, amount);
+        rewarder.setAccountSupply(address(1), amount, amount*2);
+
+        // warp a half
+        vm.warp(block.timestamp + 3600/2);
+
+        rewarder.setAccountSupply(address(1), 0, amount);
+
+        // warp a half
+        vm.warp(block.timestamp + 3600/2);
+
+        // 270,000 or 75% of the rewards
+        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 4 * 3 * Constant.ONE, 10_000);
+        // address should have 90,000, or 25% of the rewards
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 4 * Constant.ONE, 10_000);
+    }
+
     // test if a user joins the rewards, and exists before the rewards are claimed
-    function xtestJoinAndExit(uint amount) public {
+    function testJoinAndExit() public {
+        uint256 amount = 2000;
+
         // we set contrains on the amount of supply to test
         // the accuracy of the system
         vm.assume(amount > 0);
@@ -105,15 +131,20 @@ contract MTokenTest is Test {
         rewarder.setAccountSupply(address(1), amount, amount*2);
 
         // warp a quarter
-        vm.warp(block.timestamp + 3600/4);
+        vm.warp(block.timestamp + 3600/2);
 
         rewarder.setAccountSupply(address(1), 0, amount);
 
-        // warp a half
-        vm.warp(block.timestamp + 3600/2);
+        // warp a quarter
+        vm.warp(block.timestamp + 3600/4);
 
-        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 8 * 7 * Constant.ONE, 10_000);
-        // address 1 should have half a quarter
-        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 8 * 1 * Constant.ONE, 10_000);
+        //      25%            50%             25%
+        // | -------- | ----------------- | -------- |
+        //    addr1        addr1/addr2       addr1
+
+        // 270,000 or 75% of the rewards
+        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 4 * 3 * Constant.ONE, 10_000);
+        // address should have 90,000, or 25% of the rewards
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 4 * Constant.ONE, 10_000);
     }
 } 
