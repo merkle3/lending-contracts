@@ -2,6 +2,8 @@
 
 ![Test](https://shields.io/github/workflow/status/merkle3/lending-contracts/test) ![Social](https://img.shields.io/github/stars/merkle3/lending-contracts)
 
+**Merkle is not deployed yet, we are lookng at a end of November release on Mainnet** In the meantime, [join our discord](https://discord.gg/Q9Dc7jVX6c).
+
 # Merkle lending
 
 Merkle is a new kind of lending platform that can accomodate much more complicated assets than Aave or Compound.
