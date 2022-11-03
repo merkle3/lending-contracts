@@ -114,9 +114,7 @@ contract MTokenTest is Test {
     }
 
     // test if a user joins the rewards, and exists before the rewards are claimed
-    function testJoinAndExit() public {
-        uint256 amount = 2000;
-
+    function testJoinAndExit(uint256 amount) public {
         // we set contrains on the amount of supply to test
         // the accuracy of the system
         vm.assume(amount > 0);
@@ -146,5 +144,63 @@ contract MTokenTest is Test {
         assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 4 * 3 * Constant.ONE, 10_000);
         // address should have 90,000, or 25% of the rewards
         assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 4 * Constant.ONE, 10_000);
+    }
+
+    function testReinforcePosition(uint256 amount) public {
+        // we set contrains on the amount of supply to test
+        // the accuracy of the system
+        vm.assume(amount > 0);
+        // max 1 trillion units
+        vm.assume(amount < 1_000_000_000_000 * Constant.ONE);
+
+        rewarder.setAccountSupply(address(0), amount, amount);
+        rewarder.setAccountSupply(address(1), amount, amount*2);
+
+        // warp a quarter
+        vm.warp(block.timestamp + 3600/2);
+
+        rewarder.setAccountSupply(address(1), amount*2, amount*3);
+        rewarder.setAccountSupply(address(0), amount*2, amount*4);
+
+        // warp a quarter
+        vm.warp(block.timestamp + 3600/2);
+
+        //      50%                     50%             
+        // | --------------- | ----------------- | 
+        //    addr1/addr2        addr1*2/addr2*2    
+
+        // they should have 50% each
+        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 2 * Constant.ONE, 10_000);
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 2 * Constant.ONE, 10_000);
+    }
+
+    function testRewardChanging() public {
+        uint256 amount = 1000;
+
+        // we set contrains on the amount of supply to test
+        // the accuracy of the system
+        vm.assume(amount > 0);
+        // max 1 trillion units
+        vm.assume(amount < 1_000_000_000_000 * Constant.ONE);
+
+        rewarder.setAccountSupply(address(0), amount*2, amount*2);
+        rewarder.setAccountSupply(address(1), amount*2, amount*4);
+
+        // warp a quarter
+        vm.warp(block.timestamp + 3600/2);
+
+        rewarder.setAccountSupply(address(0), amount*1, amount*3);
+        rewarder.setAccountSupply(address(1), amount*3, amount*4);
+
+        // warp a quarter
+        vm.warp(block.timestamp + 3600/2);
+
+        //      50%                             50%             
+        // | ----------------------- | ------------------------ | 
+        //    addr0(50%)/addr1(50%)        addr0(25%)/addr1(75%)
+
+        // they should have 50% each
+        assertApproxEqAbs(rewarder.getPendingRewards(address(0)), 360_000 / 8 * 3 * Constant.ONE, 10_000);
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 8 * 5 * Constant.ONE, 10_000);
     }
 } 

@@ -130,9 +130,26 @@ abstract contract Rewards {
                 user.rewardDistributed = rewardsPerShare * shares;
             }
 
+            // if the user reduced their share
             if(user.shares != 0 && user.shares > shares) {
+                console.log("lowering shares ", account);
+
+                // the user has earned rewards
+                uint256 earnedRewards = (rewardsPerShare * (user.shares - shares)) / rewardExpScale;
+
+                // add the earned rewards to the owed rewards
+                user.owedRewards += earnedRewards;
+            }
+
+            // if the user increased their shares
+            if(user.shares != 0 && user.shares < shares) {
+                console.log("upping shares ", account);
+
                 // the user has earned rewards
                 uint256 earnedRewards = (rewardsPerShare * user.shares) / rewardExpScale;
+
+                // reset their reward debt
+                user.rewardDistributed = rewardsPerShare * shares;
 
                 // add the earned rewards to the owed rewards
                 user.owedRewards += earnedRewards;
