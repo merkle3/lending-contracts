@@ -52,45 +52,72 @@ contract MTokenTest is Test {
         assertEq(controller.totalAssetClasses(), 1);
     }
 
-    function depositUsdc() public {
-        usdc.mint(msg.sender, 1000 * Constant.ONE);
+    function testDepositUsdc() public {
+        usdc.mint(address(1), 1000 * Constant.ONE);
+
+        vm.prank(address(1));
         usdc.approve(address(tokenMarket), 1000 * Constant.ONE);
 
-        tokenMarket.deposit(1000 * Constant.ONE, msg.sender);
+        vm.prank(address(1));
+        tokenMarket.deposit(1000 * Constant.ONE, address(1));
 
         // make we have received the shares
-        assertEq(tokenMarket.balanceOf(msg.sender), 1000 * Constant.ONE);
+        assertEq(tokenMarket.balanceOf(address(1)), 1000 * Constant.ONE);
     }
 
-    function depositUsdcTwice(address someoneElse, uint256 amount) public {
-        vm.assume(someoneElse != msg.sender);
+    function testDepositUsdcTwice(address someoneElse, uint256 amount) public {
+        vm.assume(someoneElse != address(1));
+        vm.assume(someoneElse != address(0));
 
-        usdc.mint(someoneElse, amount * Constant.ONE);
-        usdc.mint(msg.sender, 1000 * Constant.ONE);
+        // deposit less than 1 trillion
+        vm.assume(amount < 1_000_000_000_000);
+        // and more than 0
+        vm.assume(amount > 0);
 
+        // if we deposit usdc
+        usdc.mint(address(1), 1000 * Constant.ONE);
+
+        vm.prank(address(1));
         usdc.approve(address(tokenMarket), 1000 * Constant.ONE);
 
-        tokenMarket.deposit(1000 * Constant.ONE, msg.sender);
+        vm.prank(address(1));
+        tokenMarket.deposit(1000 * Constant.ONE, address(1));
+
+        // and someone else deposits
+        usdc.mint(someoneElse, amount * Constant.ONE);
 
         vm.prank(someoneElse);
-
         usdc.approve(address(tokenMarket), amount * Constant.ONE);
+
+        vm.prank(someoneElse);
+        tokenMarket.deposit(amount * Constant.ONE, someoneElse);
 
         // make sure shares we minted have received the shares
         assertEq(tokenMarket.balanceOf(someoneElse), amount * Constant.ONE);
-        assertEq(tokenMarket.totalAssets(), 1500 * Constant.ONE);
+        assertEq(tokenMarket.balanceOf(address(1)), 1000 * Constant.ONE);
+        assertEq(tokenMarket.totalAssets(), (amount + 1000) * Constant.ONE);
     }
 
-    function withdrawUsdcTest(uint256 amount) public {
-        usdc.mint(msg.sender, amount * Constant.ONE);
+    function testWithdrawUsdcTest(uint256 amount) public {
+        // deposit less than 1 trillion
+        vm.assume(amount < 1_000_000_000_000);
+        // and more than 0
+        vm.assume(amount > 0);
+
+        usdc.mint(address(1), amount * Constant.ONE);
+
+        vm.prank(address(1));
         usdc.approve(address(tokenMarket), amount * Constant.ONE);
 
-        tokenMarket.deposit(amount * Constant.ONE, msg.sender);
+        vm.prank(address(1));
+        tokenMarket.deposit(amount * Constant.ONE, address(1));
 
-        tokenMarket.withdraw(amount * Constant.ONE, msg.sender, msg.sender);
+        vm.prank(address(1));
+        tokenMarket.withdraw(amount * Constant.ONE, address(1), address(1));
 
-        // make we have received the shares
-        assertEq(usdc.balanceOf(msg.sender), amount * Constant.ONE);
-        assertEq(tokenMarket.totalAssets(), amount * Constant.ONE);
+        // we have received the amount
+        assertEq(usdc.balanceOf(address(1)), amount * Constant.ONE);
+        // the market has no assets
+        assertEq(tokenMarket.totalAssets(), 0);
     }
 }
