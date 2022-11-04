@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
-pragma experimental ABIEncoderV2;
 
 import {IInterestModel} from './IInterestModel.sol';
 import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
