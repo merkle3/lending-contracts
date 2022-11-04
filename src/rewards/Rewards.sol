@@ -40,8 +40,8 @@ abstract contract Rewards {
         // or reward that were earned before the user joined
         uint256 rewardDistributed; 
         // rewards owed to the user, but not yet distributed
-        // this happens if the user reduces their share
-        // amount
+        // this happens if the user reduces or increases
+        // their share amount
         uint256 owedRewards;
     }
 

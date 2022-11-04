@@ -174,9 +174,7 @@ contract MTokenTest is Test {
         assertApproxEqAbs(rewarder.getPendingRewards(address(1)), 360_000 / 2 * Constant.ONE, 10_000);
     }
 
-    function testRewardChanging() public {
-        uint256 amount = 1000;
-
+    function testRewardChanging(uint256 amount) public {
         // we set contrains on the amount of supply to test
         // the accuracy of the system
         vm.assume(amount > 0);
