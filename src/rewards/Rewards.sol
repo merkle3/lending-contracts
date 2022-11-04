@@ -19,6 +19,10 @@ abstract contract Rewards {
     // total reward to distribute
     uint256 public totalRewards;
 
+    // total rewards distributed via transfers
+    // this is not pending rewards
+    uint256 public totalRewardsPaid;
+
     // the timestamp when reward started
     uint256 public startTimestamp;
     
@@ -58,14 +62,23 @@ abstract contract Rewards {
     /// @param _totalRewards the total rewards
     /// @param _rewardDuration the period of rewards
     constructor(ERC20 _rewardToken, uint256 start, uint256 _totalRewards, uint256 _rewardDuration) {
-        // start now
+        // start at a specific time
         startTimestamp = start;
 
+        // the ERC20 token to distribute
         rewardToken = _rewardToken;
+
+        // the reward per second
         rewardPerSecond = _totalRewards / _rewardDuration;
+
+        // the total rewards
         totalRewards = rewardPerSecond * _rewardDuration;
+
+        // the end timestamp of the reward period
         endTimestamp = startTimestamp + _rewardDuration;
-        lastRewardTimestamp = startTimestamp;
+
+        // set the last reward timestamp
+        lastRewardTimestamp = 0;
     }
 
     /// @notice calculate the amount of reward per share over a time period
@@ -99,8 +112,14 @@ abstract contract Rewards {
             // we bound the rewards to the end timestamp
             uint256 endBoundTimestamp = block.timestamp;
 
+            // make sure we don't reward over the end timestamp
             if (endBoundTimestamp > endTimestamp) {
                 endBoundTimestamp = endTimestamp;
+            }
+
+            // if we havn't started yet
+            if (lastRewardTimestamp == 0) {
+                lastRewardTimestamp = startTimestamp;
             }
 
             // calculate reward
@@ -182,11 +201,14 @@ abstract contract Rewards {
         // make sure we don't claim too much
         require(pendingRewards >= rewardAmount, "Rewards: not enough rewards");
 
-        // update the reward balance
-        user.rewardDistributed += rewardAmount;
+        // reset the zeroing
+        user.rewardDistributed = user.shares * rewardsPerShare;
 
         // update the owed rewards
         user.owedRewards == 0;
+
+        // update the total paid out
+        totalRewardsPaid += rewardAmount;
 
         // transfer the rewards
         rewardToken.safeTransfer(recipient, rewardAmount);
