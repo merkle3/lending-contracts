@@ -29,7 +29,7 @@ abstract contract Rewards {
     uint256 public endTimestamp;
 
     // we scale up rewards per share for much more accuracy on small time scales
-    uint256 private rewardExpScale = 1e45;
+    uint256 private rewardExpScale = 1e36;
 
     // user info
     struct UserInfo {
@@ -205,6 +205,12 @@ abstract contract Rewards {
 
         // update the owed rewards
         user.owedRewards == 0;
+        
+        // if we round up, cap it at max rewards
+        if (rewardAmount + totalRewardsPaid > totalRewards) {
+            // if we round up 
+            rewardAmount = totalRewards - totalRewardsPaid;
+        }
 
         // update the total paid out
         totalRewardsPaid += rewardAmount;
