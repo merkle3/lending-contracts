@@ -70,7 +70,8 @@ abstract contract Rewards {
         // the reward per second
         rewardPerSecond = _totalRewards / _rewardDuration;
 
-        // the total rewards
+        // the total rewards, we are re-calculating in 
+        // case of precision loss from the previous divison
         totalRewards = rewardPerSecond * _rewardDuration;
 
         // the end timestamp of the reward period
@@ -181,24 +182,20 @@ abstract contract Rewards {
         UserInfo storage user = userInfo[account];
 
         // the current reward per share minus the reward debt
-        uint256 owned = user.shares.mulDivDown(rewardsPerShare, rewardExpScale) - (user.rewardDistributed/rewardExpScale);
+        uint256 owed = user.shares.mulDivDown(rewardsPerShare, rewardExpScale) - (user.rewardDistributed/rewardExpScale);
 
         // return the owned shares
-        return owned + user.owedRewards;
+        return owed + user.owedRewards;
     }
 
     /// @notice allows an account to claim the rewards
-    /// @param rewardAmount the shares of rewards to claim
     /// @param recipient the recipient of the rewards
-    function claimRewards(uint256 rewardAmount, address recipient) external virtual {
+    function claimRewards(address recipient) external virtual {
         // the user info
         UserInfo storage user = userInfo[msg.sender];
 
         // check the user info
         uint256 pendingRewards = this.getPendingRewards(msg.sender);        
-
-        // make sure we don't claim too much
-        require(pendingRewards >= rewardAmount, "Rewards: not enough rewards");
 
         // reset the zeroing
         user.rewardDistributed = user.shares * rewardsPerShare;
@@ -207,15 +204,15 @@ abstract contract Rewards {
         user.owedRewards == 0;
         
         // if we round up, cap it at max rewards
-        if (rewardAmount + totalRewardsPaid > totalRewards) {
+        if (pendingRewards + totalRewardsPaid > totalRewards) {
             // if we round up 
-            rewardAmount = totalRewards - totalRewardsPaid;
+            pendingRewards = totalRewards - totalRewardsPaid;
         }
 
         // update the total paid out
-        totalRewardsPaid += rewardAmount;
+        totalRewardsPaid += pendingRewards;
 
         // transfer the rewards
-        rewardToken.safeTransfer(recipient, rewardAmount);
+        rewardToken.safeTransfer(recipient, pendingRewards);
     }
 }

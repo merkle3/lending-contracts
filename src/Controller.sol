@@ -146,14 +146,13 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     /// @notice collect reward from all vaults
-    /// @param rewardAmount the shares of rewards to claim
     /// @param recipient the recipient of the rewards
-    function claimRewards(uint256 rewardAmount, address recipient) external returns (uint256 totalRewards) {
+    function claimRewards(address recipient) external returns (uint256 totalRewards) {
         totalRewards = 0;
 
         for(uint24 i = 0; i < assetClassesList.length; i++) {
             // add up all the collateral from all asset classes
-            Rewards(assetClassesList[i]).claimRewards(rewardAmount, recipient);
+            Rewards(assetClassesList[i]).claimRewards(recipient);
         }
     }
 }
