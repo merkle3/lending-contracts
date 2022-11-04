@@ -1,26 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >= 0.5.0;
 
-import "forge-std/console.sol";
-import {FixedPointMathLib} from '../src/libraries/FixedPointMathLib.sol';
 import "forge-std/Test.sol";
 import "../src/markets/MToken.sol";
 import "../src/Controller.sol";
 import "../src/interest/BaseInterestModel.sol";
+import "../src/interfaces/AggregatorV3Interface.sol";
 import "./Constant.sol";
 import "./mocks/MockV3Aggregator.sol";
 import "./mocks/MockERC20.sol";
 import "./mocks/MockAsset.sol";
 
-contract InterestTest is Test {
+contract MTokenTest is Test {
     MToken public tokenMarket;
-    MockAsset public mockAsset;
     Controller public controller;
     BaseInterestModel public interestModel;
     MockERC20 public mockToken;
     MockV3Aggregator public mockOracle;
-
-    using FixedPointMathLib for uint256;
+    MockAsset public mockAsset;
 
     function setUp() public {
         controller = new Controller();
@@ -52,21 +49,36 @@ contract InterestTest is Test {
         mockOracle.updateAnswer(1e8);
     }
 
-    function testInterestAccrual(uint amount) public {
+    function testHealthyState(uint256 amount) public {
         vm.assume(amount > 0);
-        vm.assume(amount < 10_000);
+        vm.assume(amount < 8_000 * Constant.ONE);
+        
+        // make the fake asset worth 10k
+        mockAsset.setAmountUsd(address(2), 10_000);
 
-        // borrow some funds
-        mockAsset.setAmountUsd(address(2), 20_000);
-
+        // take a 8k loan on address(2)
         vm.prank(address(2));
-        tokenMarket.borrow(amount * Constant.ONE, address(2));
+        tokenMarket.borrow(amount, address(2));
 
-        // go 100s in time
-        vm.warp(block.timestamp + 100);
+        // make sure its unhealthy
+        assertEq(controller.isHealthy(address(2)), true);
+    }
 
-        // make sure the total borrow has increased
-        assertGt(tokenMarket.getBorrowBalance(address(2)), amount * Constant.ONE);
-        assertGt(tokenMarket.totalBorrows(), amount * Constant.ONE);
+    function testLiquidationState(uint256 amount) public {
+        vm.assume(amount >= 5_000 * Constant.ONE);
+        vm.assume(amount <= 8_000 * Constant.ONE);
+
+        // make the fake asset worth 10k
+        mockAsset.setAmountUsd(address(2), 10_000);
+
+        // take a 8k loan on address(2)
+        vm.prank(address(2));
+        tokenMarket.borrow(amount, address(2));
+
+        // make the fake asset worth 5k
+        mockAsset.setAmountUsd(address(2), 5_000);
+
+        // make sure its unhealthy
+        assertEq(controller.isHealthy(address(2)), false);
     }
 }

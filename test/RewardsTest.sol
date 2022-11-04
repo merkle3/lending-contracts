@@ -7,7 +7,7 @@ import "./mocks/MockRewarder.sol";
 import "./mocks/MockERC20.sol";
 import "../src/rewards/Rewards.sol";
 
-contract MTokenTest is Test {
+contract RewardsTest is Test {
     MockRewarder public rewarder;
     MockERC20 public token;
 

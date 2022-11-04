@@ -29,7 +29,7 @@ contract MTokenTest is Test {
             address(usdc),
             address(usdcOracle),
             address(interestModel),
-            1e6);
+            1e18);
     }
 
     function testSetup() public {

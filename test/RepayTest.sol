@@ -57,7 +57,7 @@ contract InterestTest is Test {
         vm.assume(amount < 10_000);
 
         // borrow some funds
-        mockAsset.setAmountUsd(20_000);
+        mockAsset.setAmountUsd(address(2), 20_000);
 
         vm.startPrank(address(2));
         tokenMarket.borrow(amount * Constant.ONE, address(2));

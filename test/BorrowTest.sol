@@ -58,7 +58,8 @@ contract BorrowTest is Test {
 
         vm.expectRevert(bytes("NOT_HEALTHY"));
 
-        tokenMarket.borrow(amount, msg.sender);
+        vm.prank(address(2));
+        tokenMarket.borrow(amount, address(2));
     }
 
     function testBorrowMoreThanReserves(uint amount) public {
@@ -66,7 +67,7 @@ contract BorrowTest is Test {
 
         vm.expectRevert(bytes("NO_RESERVES"));
 
-        tokenMarket.borrow(amount, msg.sender);
+        tokenMarket.borrow(amount, address(2));
     }
 
     function testBorrowToZeroAddress() public {
@@ -80,28 +81,30 @@ contract BorrowTest is Test {
         vm.assume(amount < 10_000);
 
         // provider the collateral
-        mockAsset.setAmountUsd(amount);
+        mockAsset.setAmountUsd(address(2), amount);
 
         // try to borrow less than 80% of the collateral
         uint borrowAmount = amount.mulDivDown(8_000, 10_000);
 
-        tokenMarket.borrow(borrowAmount * Constant.ONE, msg.sender);
+        vm.prank(address(2));
+        tokenMarket.borrow(borrowAmount * Constant.ONE, address(2));
 
         // check that we received the funds
-        assertEq(mockToken.balanceOf(msg.sender), borrowAmount * Constant.ONE);
+        assertEq(mockToken.balanceOf(address(2)), borrowAmount * Constant.ONE);
     }
 
     function testBorrowTooMuch(uint amount) public {
         vm.assume(amount > 0);
         vm.assume(amount < 10_000);
 
-        mockAsset.setAmountUsd(amount);
+        mockAsset.setAmountUsd(address(2), amount);
 
         uint borrowAmount = amount.mulDivDown(8_000, 10_000) + 1;
 
         vm.expectRevert(bytes("NOT_HEALTHY"));
 
         // try to borrow more than collateral
-        tokenMarket.borrow(borrowAmount * Constant.ONE, msg.sender);
+        vm.prank(address(2));
+        tokenMarket.borrow(borrowAmount * Constant.ONE, address(2));
     }
 }
