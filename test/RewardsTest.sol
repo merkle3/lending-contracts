@@ -222,5 +222,46 @@ contract RewardsTest is Test {
 
         // make we got the rewards
         assertApproxEqAbs(token.balanceOf(address(1)), 360_000 * Constant.ONE, 10_000);
+        // make sure the new pending rewards is 0
+        assertEq(rewarder.getPendingRewards(address(1)), 0);
+    }
+
+    function testClaimingRewardsHalfway(uint amount) public {
+        // more than 0
+        vm.assume(amount > 0);
+        // max 1 trillion units
+        vm.assume(amount < 1_000_000_000_000 * Constant.ONE);
+
+        rewarder.setAccountSupply(address(1), amount, amount);
+
+        // lets warp
+        vm.warp(block.timestamp + 3600/2);
+
+        // make sure we got all the rewards
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), rewarder.totalRewards()/2, 10_000);
+        
+        // claim the rewards
+        vm.prank(address(1));
+        rewarder.claimRewards(address(1));
+
+        // make we got the rewards
+        assertApproxEqAbs(token.balanceOf(address(1)), 360_000 * Constant.ONE/2, 10_000);
+        // make sure the new pending rewards is 0
+        assertEq(rewarder.getPendingRewards(address(1)), 0);
+
+        // lets warp
+        vm.warp(block.timestamp + 3600/2);
+
+        // make sure we got all the rewards
+        assertApproxEqAbs(rewarder.getPendingRewards(address(1)), rewarder.totalRewards()/2, 10_000);
+        
+        // claim the rewards
+        vm.prank(address(1));
+        rewarder.claimRewards(address(1));
+
+        // make we got the rewards
+        assertApproxEqAbs(token.balanceOf(address(1)), 360_000 * Constant.ONE, 10_000);
+        // make sure the new pending rewards is 0
+        assertEq(rewarder.getPendingRewards(address(1)), 0);
     }
 } 
