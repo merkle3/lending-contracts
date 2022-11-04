@@ -9,6 +9,7 @@ import "../src/interfaces/AggregatorV3Interface.sol";
 import "./Constant.sol";
 import "./mocks/MockV3Aggregator.sol";
 import "./mocks/MockERC20.sol";
+import "./mocks/MockLiquidator.sol";
 import "./mocks/MockAsset.sol";
 
 contract MTokenTest is Test {
@@ -18,6 +19,7 @@ contract MTokenTest is Test {
     MockERC20 public mockToken;
     MockV3Aggregator public mockOracle;
     MockAsset public mockAsset;
+    MockLiquidator public mockLiquidator;
 
     function setUp() public {
         controller = new Controller();
@@ -25,6 +27,7 @@ contract MTokenTest is Test {
         mockToken = new MockERC20("MockUSDC", "mockUSDC");
         mockOracle = new MockV3Aggregator(8, 1e8);
         mockAsset = new MockAsset();
+        mockLiquidator = new MockLiquidator();
 
         tokenMarket = new MToken(
             address(controller),
@@ -80,5 +83,12 @@ contract MTokenTest is Test {
 
         // make sure its unhealthy
         assertEq(controller.isHealthy(address(2)), false);
+    }
+
+    function xtestLiquidation(uint256 amount) public {
+        vm.assume(amount >= 5_000 * Constant.ONE);
+        vm.assume(amount <= 8_000 * Constant.ONE);
+
+        // TODO: simulate a liquidation
     }
 }

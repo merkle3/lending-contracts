@@ -8,6 +8,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IAssetClass} from './interfaces/IAssetClass.sol';
 import {MTokenMarket} from './interfaces/MTokenMarket.sol';
 import {IController} from './interfaces/IController.sol';
+import {IMerkleLiquidator} from './interfaces/IMerkleLiquidator.sol';
 import {Rewards} from './rewards/Rewards.sol';
 
 /**
@@ -116,8 +117,8 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     // buy assets from account to repay debts
-    function buyAssets(address account, address[] calldata assetClass, uint256[] calldata tokenId) external override returns (bool) {
-        require(!this.isHealthy(account), "Account is healthy, cannot buy assets");
+    function buyAssets(address account, address[] calldata assetClass, uint256[] calldata tokenId, address liquidator, bytes memory data) external override returns (bool) {
+        require(!this.isHealthy(account), "Account is healthy, cannot liquidate");
 
         // transfer assets to liquidator
         for (uint i = 0; i < assetClass.length; i++) {
@@ -125,8 +126,21 @@ contract Controller is Ownable, Pausable, IController {
             IAssetClass(assetClass[i]).transferAsset(account, msg.sender, tokenId[i]);
         }
 
+        // call the callback on the liquidator
+        try IMerkleLiquidator(liquidator).onMerkleLiquidation(
+            account,
+            data
+        ) returns (bytes4 retval) {
+            require(
+                retval == IMerkleLiquidator.onMerkleLiquidation.selector,
+                "IMerkleLiquidator: liquidator not implemented"
+            );
+        } catch {
+            revert("IMerkleLiquidator: liquidator callback failed");
+        }
+
         // make sure the account is healthy afterwards
-        require(this.isHealthy(account), "Account is unhealthy after sell");
+        require(this.isHealthy(account), "Account is unhealthy after liquidation");
 
         // emit event for liquidation
         emit Liquidation(account, assetClass, tokenId);

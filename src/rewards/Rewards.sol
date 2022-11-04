@@ -5,10 +5,11 @@ import "forge-std/console.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
 import {SafeTransferLib} from "../libraries/SafeTransferLib.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // this contract is a generic interface for awarding rewards
 // for a share of a vault
-abstract contract Rewards {
+abstract contract Rewards is Ownable {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -79,6 +80,9 @@ abstract contract Rewards {
 
         // set the last reward timestamp
         lastRewardTimestamp = 0;
+
+        // transfer ownership
+        transferOwnership(msg.sender);
     }
 
     /// @notice calculate the amount of reward per share over a time period
@@ -214,5 +218,32 @@ abstract contract Rewards {
 
         // transfer the rewards
         rewardToken.safeTransfer(recipient, pendingRewards);
+    }
+
+    // ---- ADMIN FUNCTIONS -----
+    /// @notice change the start date if it hasn't started yet
+    /// @param _startTimestamp the new start timestamp
+    function setStartTimestamp(uint256 _startTimestamp) external onlyOwner {
+        // make sure we haven't started yet
+        require(block.timestamp < startTimestamp, "Rewards already started");
+
+        // set the new start timestamp
+        startTimestamp = _startTimestamp;
+
+        // update the rewards per second
+        rewardPerSecond = totalRewards / (endTimestamp - _startTimestamp);
+    }
+
+    /// @notice change the end date if it hasn't started yet
+    /// @param _endTimestamp the new end timestamp
+    function setEndTimestamp(uint256 _endTimestamp) external onlyOwner {
+        // make sure we haven't started yet
+        require(block.timestamp < startTimestamp, "Rewards already started");
+
+        // set the new end timestamp
+        endTimestamp = _endTimestamp;
+
+        // update the rewards per second
+        rewardPerSecond = totalRewards / (_endTimestamp - startTimestamp);
     }
 }
