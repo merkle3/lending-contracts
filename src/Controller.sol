@@ -6,7 +6,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IAssetClass} from './interfaces/IAssetClass.sol';
-import {MTokenMarket} from './interfaces/MTokenMarket.sol';
+import {IDebtMarket} from './interfaces/IDebtMarket.sol';
 import {IController} from './interfaces/IController.sol';
 import {IMerkleLiquidator} from './interfaces/IMerkleLiquidator.sol';
 import {Rewards} from './rewards/Rewards.sol';
@@ -20,7 +20,7 @@ contract Controller is Ownable, Pausable, IController {
     address[] public assetClassesList;
 
     // we need to be able to register token markets
-    address[] public tokenMarketsList;
+    address[] public debtMarketsList;
 
     // maximum collateral usability (80%)
     uint256 constant maxCollateralUsability = 8_000;
@@ -39,8 +39,8 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     // returns the total of token markets registered
-    function totalTokenMarkets() external view returns (uint) {
-        return tokenMarketsList.length;
+    function totalDebtMarkets() external view returns (uint) {
+        return debtMarketsList.length;
     }
 
     // return the count of asset classes registered
@@ -58,9 +58,9 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     // add a new market
-    function addMarket(address market) external onlyOwner {
+    function addDebtMarket(address market) external onlyOwner {
         // add market to list
-        tokenMarketsList.push(market);
+        debtMarketsList.push(market);
 
         // event
         emit TokenMarketAdded(market);
@@ -97,9 +97,9 @@ contract Controller is Ownable, Pausable, IController {
     function getTotalBorrow(address account) public returns(uint256) {
         uint totalBorrowForAccount = 0;
 
-        for(uint24 i = 0; i < tokenMarketsList.length; i++) {
+        for(uint24 i = 0; i < debtMarketsList.length; i++) {
             // add up all the borrowing from all token markets
-            totalBorrowForAccount += MTokenMarket(tokenMarketsList[i]).getBorrowBalanceUsd(account);
+            totalBorrowForAccount += IDebtMarket(debtMarketsList[i]).getDebtBalanceUsd(account);
         }
 
         return totalBorrowForAccount;
@@ -153,9 +153,9 @@ contract Controller is Ownable, Pausable, IController {
     function getPendingRewards(address account) external returns (uint256 totalRewards) {
         totalRewards = 0;
 
-        for(uint24 i = 0; i < tokenMarketsList.length; i++) {
+        for(uint24 i = 0; i < debtMarketsList.length; i++) {
             // add up all the collateral from all asset classes
-            totalRewards += Rewards(tokenMarketsList[i]).getPendingRewards(account);
+            totalRewards += Rewards(debtMarketsList[i]).getPendingRewards(account);
         }
     }
 

@@ -37,7 +37,7 @@ contract MTokenTest is Test {
             1e18);
 
         controller.addAssetClass(address(mockAsset));
-        controller.addMarket(address(tokenMarket));
+        controller.addDebtMarket(address(tokenMarket));
 
         // fill the vault
         mockToken.mint(address(1), 10_000 * Constant.ONE);
@@ -89,6 +89,20 @@ contract MTokenTest is Test {
         vm.assume(amount >= 5_000 * Constant.ONE);
         vm.assume(amount <= 8_000 * Constant.ONE);
 
-        // TODO: simulate a liquidation
+        // make the fake asset worth 10k
+        mockAsset.setAmountUsd(address(2), 10_000);
+
+        // take a 8k loan on address(2)
+        vm.prank(address(2));
+        tokenMarket.borrow(amount, address(2));
+
+        // make the fake asset worth 5k
+        mockAsset.setAmountUsd(address(2), 5_000);
+
+        // make sure its unhealthy
+        assertEq(controller.isHealthy(address(2)), false);
+
+        // new we can liquidate
+        
     }
 }

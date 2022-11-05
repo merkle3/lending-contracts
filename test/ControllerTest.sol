@@ -34,13 +34,13 @@ contract ControllerTest is Test {
             1e18);
 
         controller.addAssetClass(address(mockAsset));
-        controller.addMarket(address(tokenMarket));
+        controller.addDebtMarket(address(tokenMarket));
 
         mockOracle.updateAnswer(1e8);
     }
 
     function testSetup() public {
-        assertEq(controller.totalTokenMarkets(), 1);
+        assertEq(controller.totalDebtMarkets(), 1);
         assertEq(controller.totalAssetClasses(), 1);
         assertGt(controller.platformFee(), 0);
     }

@@ -37,10 +37,10 @@ contract MTokenTest is Test {
         assertEq(tokenMarket.getBorrowRate(), Constant.ONE);
     }
 
-    function testAddMarket() public {
-        controller.addMarket(address(tokenMarket));
+    function testaddDebtMarket() public {
+        controller.addDebtMarket(address(tokenMarket));
 
-        assertEq(controller.totalTokenMarkets(), 1);
+        assertEq(controller.totalDebtMarkets(), 1);
         assertEq(controller.totalAssetClasses(), 0);
     }
 
@@ -48,7 +48,7 @@ contract MTokenTest is Test {
         IAssetClass asset = new MockAsset();
         controller.addAssetClass(address(asset));
 
-        assertEq(controller.totalTokenMarkets(), 0);
+        assertEq(controller.totalDebtMarkets(), 0);
         assertEq(controller.totalAssetClasses(), 1);
     }
 

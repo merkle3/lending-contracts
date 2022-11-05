@@ -8,5 +8,5 @@ interface IController {
     function isHealthy(address account) external returns (bool);
 
     // sell assets if the borrow is not solvant
-    function buyAssets(address account, address[] calldata markets, uint256[] calldata tokenId) external returns (bool);
+    function buyAssets(address account, address[] calldata assetClass, uint256[] calldata tokenId, address liquidator, bytes memory data) external returns (bool);
 }

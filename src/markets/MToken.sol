@@ -6,7 +6,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeTransferLib} from "../libraries/SafeTransferLib.sol";
 
 import {ERC4626} from "../generics/ERC4626.sol";
-import {MTokenMarket} from '../interfaces/MTokenMarket.sol';
+import {IDebtMarket} from '../interfaces/IDebtMarket.sol';
 import {IController} from '../interfaces/IController.sol';
 import {IInterestModel} from '../interest/IInterestModel.sol';
 import {Rewards} from '../rewards/Rewards.sol';
@@ -18,7 +18,7 @@ import {IERC3156FlashLender} from '../interfaces/IERC3156FlashLender.sol';
 import {AggregatorV3Interface} from '../interfaces/AggregatorV3Interface.sol';
 import {FixedPointMathLib} from '../libraries/FixedPointMathLib.sol';
 
-contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards {
+contract MToken is IDebtMarket, IERC3156FlashLender, Ownable, Pausable, Rewards {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
     using SafeMath for uint;
@@ -136,7 +136,7 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
 
     /// @notice return the balance in usd 
     /// @param borrower the borrower whose balance to check
-    function getBorrowBalanceUsd(address borrower) override public returns (uint256) {
+    function getDebtBalanceUsd(address borrower) override public returns (uint256) {
         this.accrueInterest();
 
         AggregatorV3Interface tokenAggr = AggregatorV3Interface(oracle);
@@ -246,7 +246,7 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
     /// they are reponsible for.
     /// @param amountUnderlying the amount to borrow
     /// @param receiver the account to receive the loaned underlying amount
-    function borrow(uint256 amountUnderlying, address receiver) override external updateReward(msg.sender) whenNotPaused {
+    function borrow(uint256 amountUnderlying, address receiver) external updateReward(msg.sender) whenNotPaused {
         // check if there is enough cash
         require(cashReserves >= amountUnderlying, "NO_RESERVES");
 
@@ -281,7 +281,7 @@ contract MToken is MTokenMarket, IERC3156FlashLender, Ownable, Pausable, Rewards
     /// @notice repay a loan
     /// @param account the account to repay
     /// @param amountUnderlying the amount to repay
-    function repay(address account, uint256 amountUnderlying) override external updateReward(account) {
+    function repay(address account, uint256 amountUnderlying) external updateReward(account) {
          // calculate reserves
         this.accrueInterest();
 
