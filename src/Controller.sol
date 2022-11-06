@@ -127,6 +127,6 @@ contract Controller is Ownable, Pausable, IController {
         }
 
         // make sure the account is healthy afterwards
-        require(this.isHealthy(account), "ACCOUNT_UNHEALTHY");
+        require(this.isHealthy(account) == true, "ACCOUNT_UNHEALTHY");
     }
 }

@@ -155,7 +155,7 @@ contract MTokenTest is Test {
         // first, we need to give the liquidator some tokens
         mockToken.mint(address(mockLiquidator), 10_000 * Constant.ONE);
         // then we need to tell it to wipe the debt
-        mockLiquidator.setPaybackAmount(address(2), amount/2);
+        mockLiquidator.setPaybackAmount(address(2), amount-1);
 
         address[] memory markets = new address[](1);
         bytes[] memory data = new bytes[](1);
@@ -163,7 +163,8 @@ contract MTokenTest is Test {
         markets[0] = address(mockAsset);
 
         // then we liquidate
-        vm.expectRevert(bytes("ACCOUNT_UNHEALTHY"));
+        // vm.expectRevert(bytes("ACCOUNT_UNHEALTHY"));
+
         controller.liquidate(
             address(2), 
             markets, 
@@ -171,6 +172,9 @@ contract MTokenTest is Test {
             address(mockLiquidator), 
             bytes("")
         );
+
+        // make sure the account still has the same amount of debt
+        assertEq(tokenMarket.getBorrowBalance(address(2)), amount);
 
         // and we should have a healthy account
         assertEq(controller.isHealthy(address(2)), false);
