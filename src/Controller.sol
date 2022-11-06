@@ -22,21 +22,21 @@ contract Controller is Ownable, Pausable, IController {
     // list of debt markets
     address[] public debtMarketsList;
 
-    // maximum collateral usability (80%)
-    uint256 constant collateralDefaultRate = 8_000;
-
     // specific rates for markets
     mapping(address => uint256) public collateralRates;
 
     // disabled markets
     mapping(address => bool) public disabledMarkets;
 
-    // 20% by default
-    uint platformFees = 2_000; // = 20%, 100 = 1%
+    // 30% by default
+    uint platformFees = 3_000; // = 30%, 100 = 1%
 
     // events
     event Liquidation(address indexed account, address markets);
     event DebtMarketAdded(address indexed tokenMarket);
+    event CollateralRateChanged(address indexed tokenMarket, uint256 rate);
+    event MarketDisabled(address indexed tokenMarket, bool disabled);
+    event PlatformFeeChanged(uint256 fee);
 
     constructor() {
         // register owner
@@ -61,12 +61,6 @@ contract Controller is Ownable, Pausable, IController {
         for(uint24 i = 0; i < debtMarketsList.length; i++) {
             // by default, we allow a certain usage of collateral
             uint256 rate = collateralRates[debtMarketsList[i]];
-
-            if (rate == 0) {
-                // for some markets, we might want to have less
-                // exposure to collateral
-                rate = collateralDefaultRate;
-            }
 
             // if disabled, don't call it
             if (disabledMarkets[debtMarketsList[i]]) {
@@ -139,9 +133,15 @@ contract Controller is Ownable, Pausable, IController {
     /// ------ ADMIN FUNCTIONS ---- 
     /// @notice add a new market
     /// @param market the market to add
-    function addDebtMarket(address market) external onlyOwner {
+    function addDebtMarket(address market, uint256 collateralRate) external onlyOwner {
+        // require that isn't not added yet
+        require(collateralRates[market] == 0, "MARKET_ALREADY_ADDED");
+
         // add market to list
         debtMarketsList.push(market);
+
+        // set the collateral rate
+        collateralRates[market] = collateralRate;
 
         // event
         emit DebtMarketAdded(market);
@@ -150,18 +150,30 @@ contract Controller is Ownable, Pausable, IController {
     /// @notice set the platform fee
     /// @param fee the fee in basis points
     function setPlatformFee(uint256 fee) external onlyOwner {
+        // update the fee
         platformFees = fee;
+
+        // emit
+        emit PlatformFeeChanged(fee);
     }
 
     /// @notice set the collateral rate for this market
     /// @param market the market to set the rate of
     function setCollateralRate(address market, uint256 rate) external onlyOwner {
+        // update the rate
         collateralRates[market] = rate;
+
+        // emit
+        emit CollateralRateChanged(market, rate);
     }
     
     /// @notice set the disable state for a market
     /// @param market the market to disable/re-able
     function setDisabledMarket(address market, bool disabled) external onlyOwner {
+        // update the status of the market
         disabledMarkets[market] = disabled;
+
+        // emit
+        emit MarketDisabled(market, disabled);
     }
 }
