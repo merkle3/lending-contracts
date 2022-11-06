@@ -7,6 +7,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IDebtMarket} from './interfaces/IDebtMarket.sol';
+import {FixedPointMathLib} from './libraries/FixedPointMathLib.sol';
 import {IController} from './interfaces/IController.sol';
 import {IMerkleLiquidator} from './interfaces/IMerkleLiquidator.sol';
 import {Rewards} from './rewards/Rewards.sol';
@@ -16,11 +17,19 @@ import {Rewards} from './rewards/Rewards.sol';
  borrowing or depositing collaterals.
  */
 contract Controller is Ownable, Pausable, IController {
+    using FixedPointMathLib for uint256;
+
     // list of debt markets
     address[] public debtMarketsList;
 
     // maximum collateral usability (80%)
-    uint256 constant maxCollateralUsability = 8_000;
+    uint256 constant collateralDefaultRate = 8_000;
+
+    // specific rates for markets
+    mapping(address => uint256) public collateralRates;
+
+    // disabled markets
+    mapping(address => bool) public disabledMarkets;
 
     // 20% by default
     uint platformFees = 2_000; // = 20%, 100 = 1%
@@ -39,23 +48,9 @@ contract Controller is Ownable, Pausable, IController {
         return debtMarketsList.length;
     }
 
-    // add a new market
-    function addDebtMarket(address market) external onlyOwner {
-        // add market to list
-        debtMarketsList.push(market);
-
-        // event
-        emit DebtMarketAdded(market);
-    }
-
     // return platform fee
     function platformFee() external override view returns(uint) {
         return platformFees;
-    }
-
-    // set the platform fee
-    function setPlatformFee(uint256 fee) external onlyOwner {
-        platformFees = fee;
     }
 
     // get the total amount of collateral the user has put up
@@ -64,8 +59,22 @@ contract Controller is Ownable, Pausable, IController {
         uint totalCollateralForAccount = 0;
 
         for(uint24 i = 0; i < debtMarketsList.length; i++) {
+            // by default, we allow a certain usage of collateral
+            uint256 rate = collateralRates[debtMarketsList[i]];
+
+            if (rate == 0) {
+                // for some markets, we might want to have less
+                // exposure to collateral
+                rate = collateralDefaultRate;
+            }
+
+            // if disabled, don't call it
+            if (disabledMarkets[debtMarketsList[i]]) {
+                continue;
+            }
+
             // add up all the collateral from all asset classes
-            totalCollateralForAccount += IDebtMarket(debtMarketsList[i]).getCollateralUsd(account);
+            totalCollateralForAccount += IDebtMarket(debtMarketsList[i]).getCollateralUsd(account).mulDivDown(rate, 10_000);
         }
 
         return totalCollateralForAccount;
@@ -90,12 +99,9 @@ contract Controller is Ownable, Pausable, IController {
     // checks if account is healthy
     function isHealthy(address account) external override returns(bool) {
         uint256 totalCollateral = getTotalCollateralUsd(account);
-        uint256 totalBorrow = getTotalBorrowUsd(account);
+        uint256 totalBorrow = getTotalBorrowUsd(account);        
 
-        // calculate 80% of collateral
-        uint256 maxBorrow = totalCollateral * maxCollateralUsability / 10_000;
-
-        return totalBorrow <= maxBorrow;
+        return totalBorrow <= totalCollateral;
     }
 
     // buy assets from account to repay debts
@@ -128,5 +134,34 @@ contract Controller is Ownable, Pausable, IController {
 
         // make sure the account is healthy afterwards
         require(this.isHealthy(account) == true, "ACCOUNT_UNHEALTHY");
+    }
+
+    /// ------ ADMIN FUNCTIONS ---- 
+    /// @notice add a new market
+    /// @param market the market to add
+    function addDebtMarket(address market) external onlyOwner {
+        // add market to list
+        debtMarketsList.push(market);
+
+        // event
+        emit DebtMarketAdded(market);
+    }
+
+    /// @notice set the platform fee
+    /// @param fee the fee in basis points
+    function setPlatformFee(uint256 fee) external onlyOwner {
+        platformFees = fee;
+    }
+
+    /// @notice set the collateral rate for this market
+    /// @param market the market to set the rate of
+    function setCollateralRate(address market, uint256 rate) external onlyOwner {
+        collateralRates[market] = rate;
+    }
+    
+    /// @notice set the disable state for a market
+    /// @param market the market to disable/re-able
+    function setDisabledMarket(address market, bool disabled) external onlyOwner {
+        disabledMarkets[market] = disabled;
     }
 }
