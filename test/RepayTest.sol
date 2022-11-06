@@ -12,7 +12,7 @@ import "./mocks/MockV3Aggregator.sol";
 import "./mocks/MockERC20.sol";
 import "./mocks/MockAsset.sol";
 
-contract InterestTest is Test {
+contract RepayTest is Test {
     MToken public tokenMarket;
     MockAsset public mockAsset;
     Controller public controller;
