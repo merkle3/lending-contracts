@@ -17,11 +17,13 @@ import {IERC3156FlashBorrower} from '../interfaces/IERC3156FlashBorrower.sol';
 import {IERC3156FlashLender} from '../interfaces/IERC3156FlashLender.sol';
 import {AggregatorV3Interface} from '../interfaces/AggregatorV3Interface.sol';
 import {FixedPointMathLib} from '../libraries/FixedPointMathLib.sol';
+import {BytesLib} from '../libraries/BytesLib.sol';
 
-contract MToken is IDebtMarket, IERC3156FlashLender, Ownable, Pausable, Rewards {
+contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable, Rewards {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
     using SafeMath for uint;
+    using BytesLib for bytes;
 
     // oracle for the underlying asset
     address public immutable oracle;
@@ -386,6 +388,23 @@ contract MToken is IDebtMarket, IERC3156FlashLender, Ownable, Pausable, Rewards 
     function afterWithdraw(uint256 assets, uint256 /*shares*/) override internal virtual {
         // update the cash reserves
         cashReserves = cashReserves - assets;
+    }
+
+    // ------- Liquidation --------
+
+    function liquidate(
+        address account,
+        address liquidator,
+        bytes memory data
+    ) public override onlyController {
+        // cast the amount to a number of shares
+        uint256 shares = data.toUint256(0);
+
+        // make sure the account has enough shares
+        require(balanceOf(account) >= shares, "NOT_ENOUGH_SHARES");
+
+        // send the shares to the liquidator
+        _transfer(account, liquidator, shares);
     }
 
     // ------- Flash Loan provider (ERC3156) --------

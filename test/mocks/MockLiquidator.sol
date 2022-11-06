@@ -25,7 +25,7 @@ contract MockLiquidator is IMerkleLiquidator {
     }
 
     // repay the market
-    function onMerkleLiquidation(address account, bytes memory callback) external override returns (bytes4 retval) {
+    function onMerkleLiquidation(address /*account*/, bytes memory /*callback*/) external override returns (bytes4) {
         // pay back the market
         token.transfer(market, amount);
 

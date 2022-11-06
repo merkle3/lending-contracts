@@ -36,7 +36,7 @@ contract BorrowTest is Test {
             address(interestModel),
             1e18);
 
-        controller.addAssetClass(address(mockAsset));
+        controller.addDebtMarket(address(mockAsset));
         controller.addDebtMarket(address(tokenMarket));
 
         // fill the vault

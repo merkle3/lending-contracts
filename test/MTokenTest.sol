@@ -32,24 +32,10 @@ contract MTokenTest is Test {
             1e18);
     }
 
-    function testSetup() public {
-        assertEq(tokenMarket.totalAssets(), 0);
-        assertEq(tokenMarket.getBorrowRate(), Constant.ONE);
-    }
-
-    function testaddDebtMarket() public {
+    function testAddDebtMarket() public {
         controller.addDebtMarket(address(tokenMarket));
 
         assertEq(controller.totalDebtMarkets(), 1);
-        assertEq(controller.totalAssetClasses(), 0);
-    }
-
-    function testAddFakeAssetClass() public {
-        IAssetClass asset = new MockAsset();
-        controller.addAssetClass(address(asset));
-
-        assertEq(controller.totalDebtMarkets(), 0);
-        assertEq(controller.totalAssetClasses(), 1);
     }
 
     function testDepositUsdc() public {

@@ -3,14 +3,11 @@ pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-import '../interfaces/IController.sol';
+import {IDebtMarket} from './IDebtMarket.sol';
 
 // an asset class is a wrapped version of a 721 collection
 // wrapped asset classes are non-transferable
-abstract contract IAssetClass {
-    // the controller
-    IController public controller;
-
+abstract contract IAssetClass is IDebtMarket {
     // deposit event
     event Deposit(
         address indexed owner, 
@@ -26,14 +23,8 @@ abstract contract IAssetClass {
         uint256 tokenId
     );
 
-    modifier onlyController {
-        require(msg.sender == address(controller), "ONLY_CONTROLLER");
-        _;
+    // debt always returns 0
+    function getDebtBalanceUsd(address /*borrower*/) virtual external override returns (uint256) {
+        return 0;
     }
-
-    // get the total collateral with all assets
-    function getTotalCollateralUsd(address borrower) virtual public view returns (uint256) {}
-
-    // transfer assets
-    function transferAsset(address from, address to, uint256 tokenId) onlyController virtual public {}
 }

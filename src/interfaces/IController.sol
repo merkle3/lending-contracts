@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
+pragma experimental ABIEncoderV2;
 
 interface IController {
     function platformFee() external returns(uint);
@@ -8,5 +9,5 @@ interface IController {
     function isHealthy(address account) external returns (bool);
 
     // sell assets if the borrow is not solvant
-    function buyAssets(address account, address[] calldata assetClass, uint256[] calldata tokenId, address liquidator, bytes memory data) external returns (bool);
+    function liquidate(address account, address[] calldata markets, bytes[] calldata datas, address liquidator, bytes memory data) external returns (bool);
 }

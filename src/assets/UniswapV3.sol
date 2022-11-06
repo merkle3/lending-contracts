@@ -24,6 +24,7 @@ import {IController} from "../interfaces/IController.sol";
 import {AggregatorV3Interface} from "../interfaces/AggregatorV3Interface.sol";
 import {Multicall} from "../utils/Multicall.sol";
 import {IMerkleCallback} from "../interfaces/IMerkleCallback.sol";
+import {BytesLib} from '../libraries/BytesLib.sol';
 
 contract UniswapV3 is
     IAssetClass,
@@ -36,6 +37,7 @@ contract UniswapV3 is
     // safe math library
     using SafeMath for uint256;
     using Address for address;
+    using BytesLib for bytes;
 
     // uniswapv3 addresses
     INonfungiblePositionManager constant UniswapNftManager =
@@ -310,7 +312,7 @@ contract UniswapV3 is
 
     // returns the total amount of collateral a borrower has 
     // in UniswapV3 positions.
-    function getTotalCollateralUsd(address borrower)
+    function getCollateralUsd(address borrower)
         public
         view
         override
@@ -544,16 +546,19 @@ contract UniswapV3 is
 
     // liquidation functions, can only be called by the controller
     // during a sell of assets to cover debt
-    function transferAsset(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public virtual override onlyController {
-        // make sure the owner is the from address
-        require(ownerOf(tokenId) == from, "Position not minted by owner");
+    function liquidate(
+        address borrower,
+        address liquidator,
+        bytes memory data
+    ) public override onlyController {
+        // cast the bytes in a token id
+        uint256 tokenId = data.toUint256(0);
+
+        // make sure the owner is the borrower
+        require(ownerOf(tokenId) == borrower, "Position not minted by owner");
 
         // move it to the buyer
-        UniswapNftManager.safeTransferFrom(address(this), to, tokenId);
+        UniswapNftManager.safeTransferFrom(address(this), liquidator, tokenId);
 
         // burn the position in our system
         _burn(tokenId);

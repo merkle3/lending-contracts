@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "forge-std/console.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {IAssetClass} from './interfaces/IAssetClass.sol';
 import {IDebtMarket} from './interfaces/IDebtMarket.sol';
 import {IController} from './interfaces/IController.sol';
 import {IMerkleLiquidator} from './interfaces/IMerkleLiquidator.sol';
@@ -16,10 +16,7 @@ import {Rewards} from './rewards/Rewards.sol';
  borrowing or depositing collaterals.
  */
 contract Controller is Ownable, Pausable, IController {
-    // we need to be able to register asset classes
-    address[] public assetClassesList;
-
-    // we need to be able to register token markets
+    // list of debt markets
     address[] public debtMarketsList;
 
     // maximum collateral usability (80%)
@@ -29,32 +26,17 @@ contract Controller is Ownable, Pausable, IController {
     uint platformFees = 2_000; // = 20%, 100 = 1%
 
     // events
-    event Liquidation(address indexed account, address[] markets, uint256[] assets);
-    event TokenMarketAdded(address indexed tokenMarket);
-    event AssetClassAdded(address indexed assetClass);
+    event Liquidation(address indexed account, address markets);
+    event DebtMarketAdded(address indexed tokenMarket);
 
     constructor() {
         // register owner
         transferOwnership(msg.sender);
     }
 
-    // returns the total of token markets registered
+    // return the count of asset classes registered
     function totalDebtMarkets() external view returns (uint) {
         return debtMarketsList.length;
-    }
-
-    // return the count of asset classes registered
-    function totalAssetClasses() external view returns (uint) {
-        return assetClassesList.length;
-    }
-
-    // add a new asset class
-    function addAssetClass(address assetClass) external onlyOwner {
-        // add asset class to list
-        assetClassesList.push(assetClass);
-
-        // event
-        emit AssetClassAdded(assetClass);
     }
 
     // add a new market
@@ -63,7 +45,7 @@ contract Controller is Ownable, Pausable, IController {
         debtMarketsList.push(market);
 
         // event
-        emit TokenMarketAdded(market);
+        emit DebtMarketAdded(market);
     }
 
     // return platform fee
@@ -77,13 +59,13 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     // get the total amount of collateral the user has put up
-    function getTotalCollateral(address account) view public returns(uint256) {
+    function getTotalCollateralUsd(address account) view public returns(uint256) {
         // get the total collateral
         uint totalCollateralForAccount = 0;
 
-        for(uint24 i = 0; i < assetClassesList.length; i++) {
+        for(uint24 i = 0; i < debtMarketsList.length; i++) {
             // add up all the collateral from all asset classes
-            totalCollateralForAccount += IAssetClass(assetClassesList[i]).getTotalCollateralUsd(account);
+            totalCollateralForAccount += IDebtMarket(debtMarketsList[i]).getCollateralUsd(account);
         }
 
         return totalCollateralForAccount;
@@ -94,7 +76,7 @@ contract Controller is Ownable, Pausable, IController {
      * @param account the user
      * @return the total amount borrowed in USD
      */
-    function getTotalBorrow(address account) public returns(uint256) {
+    function getTotalBorrowUsd(address account) public returns(uint256) {
         uint totalBorrowForAccount = 0;
 
         for(uint24 i = 0; i < debtMarketsList.length; i++) {
@@ -107,8 +89,8 @@ contract Controller is Ownable, Pausable, IController {
 
     // checks if account is healthy
     function isHealthy(address account) external override returns(bool) {
-        uint256 totalCollateral = getTotalCollateral(account);
-        uint256 totalBorrow = getTotalBorrow(account);
+        uint256 totalCollateral = getTotalCollateralUsd(account);
+        uint256 totalBorrow = getTotalBorrowUsd(account);
 
         // calculate 80% of collateral
         uint256 maxBorrow = totalCollateral * maxCollateralUsability / 10_000;
@@ -117,13 +99,18 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     // buy assets from account to repay debts
-    function buyAssets(address account, address[] calldata assetClass, uint256[] calldata tokenId, address liquidator, bytes memory data) external override returns (bool) {
+    function liquidate(address account, address[] calldata markets, bytes[] calldata datas, address liquidator, bytes memory data) external override returns (bool) {
         require(!this.isHealthy(account), "Account is healthy, cannot liquidate");
 
         // transfer assets to liquidator
-        for (uint i = 0; i < assetClass.length; i++) {
+        for (uint i = 0; i < markets.length; i++) {
+            address market = markets[i]; // save a SLOAD
+
             // transfer the asset to the liquidator
-            IAssetClass(assetClass[i]).transferAsset(account, msg.sender, tokenId[i]);
+            IDebtMarket(market).liquidate(account, msg.sender, datas[i]);
+
+            // emit event for liquidation
+            emit Liquidation(account, market);
         }
 
         // call the callback on the liquidator
@@ -142,31 +129,6 @@ contract Controller is Ownable, Pausable, IController {
         // make sure the account is healthy afterwards
         require(this.isHealthy(account), "Account is unhealthy after liquidation");
 
-        // emit event for liquidation
-        emit Liquidation(account, assetClass, tokenId);
-
         return true;
-    }  
-
-    /// @notice pending rewards from all vaults
-    /// @param account the account
-    function getPendingRewards(address account) external returns (uint256 totalRewards) {
-        totalRewards = 0;
-
-        for(uint24 i = 0; i < debtMarketsList.length; i++) {
-            // add up all the collateral from all asset classes
-            totalRewards += Rewards(debtMarketsList[i]).getPendingRewards(account);
-        }
-    }
-
-    /// @notice collect reward from all vaults
-    /// @param recipient the recipient of the rewards
-    function claimRewards(address recipient) external returns (uint256 totalRewards) {
-        totalRewards = 0;
-
-        for(uint24 i = 0; i < assetClassesList.length; i++) {
-            // add up all the collateral from all asset classes
-            Rewards(assetClassesList[i]).claimRewards(recipient);
-        }
     }
 }

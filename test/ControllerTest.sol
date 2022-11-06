@@ -33,28 +33,23 @@ contract ControllerTest is Test {
             address(interestModel),
             1e18);
 
-        controller.addAssetClass(address(mockAsset));
+        controller.addDebtMarket(address(mockAsset));
         controller.addDebtMarket(address(tokenMarket));
 
         mockOracle.updateAnswer(1e8);
     }
 
     function testSetup() public {
-        assertEq(controller.totalDebtMarkets(), 1);
-        assertEq(controller.totalAssetClasses(), 1);
+        assertEq(controller.totalDebtMarkets(), 2);
         assertGt(controller.platformFee(), 0);
     }
 
     function testEmptyColletarls(address addr) public {
-        assertEq(controller.getTotalBorrow(addr), 0);
-        assertEq(controller.getTotalCollateral(addr), 0);
+        assertEq(controller.getTotalBorrowUsd(addr), 0);
+        assertEq(controller.getTotalCollateralUsd(addr), 0);
         assertEq(controller.isHealthy(addr), true);
     }
-
-    function testEmptyRewards(address addr) public {
-        assertEq(controller.getPendingRewards(addr), 0);
-    }
-
+    
     function testSetPlatformFee(uint256 fee) public {
         controller.setPlatformFee(fee);
         assertEq(controller.platformFee(), fee);
