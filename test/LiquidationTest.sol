@@ -108,11 +108,11 @@ contract MTokenTest is Test {
         // make sure its unhealthy
         assertEq(controller.isHealthy(address(2)), false);
 
-        // new we can liquidate
+        // now we can liquidate
         
         // first, we need to give the liquidator some tokens
         mockToken.mint(address(mockLiquidator), 10_000 * Constant.ONE);
-        // then we need to tell it to wipe the devt
+        // then we need to tell it to wipe the debt
         mockLiquidator.setPaybackAmount(address(2), amount);
 
         address[] memory markets = new address[](1);
@@ -123,7 +123,6 @@ contract MTokenTest is Test {
         // then we liquidate
         controller.liquidate(
             address(2), 
-            // an array of addresses in solidity    
             markets, 
             data, 
             address(mockLiquidator), 
