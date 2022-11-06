@@ -132,4 +132,47 @@ contract MTokenTest is Test {
         // and we should have a healthy account
         assertEq(controller.isHealthy(address(2)), true);
     }
+
+    function testFailedLiquidation(uint amount) public {
+        vm.assume(amount >= 5_000 * Constant.ONE);
+        vm.assume(amount <= 8_000 * Constant.ONE);
+
+        // make the fake asset worth 10k
+        mockAsset.setAmountUsd(address(2), 10_000);
+
+        // take a 8k loan on address(2)
+        vm.prank(address(2));
+        tokenMarket.borrow(amount, address(2));
+
+        // make the fake asset worth 0
+        mockAsset.setAmountUsd(address(2), 0);
+
+        // make sure its unhealthy
+        assertEq(controller.isHealthy(address(2)), false);
+
+        // now we can liquidate
+        
+        // first, we need to give the liquidator some tokens
+        mockToken.mint(address(mockLiquidator), 10_000 * Constant.ONE);
+        // then we need to tell it to wipe the debt
+        mockLiquidator.setPaybackAmount(address(2), amount/2);
+
+        address[] memory markets = new address[](1);
+        bytes[] memory data = new bytes[](1);
+
+        markets[0] = address(mockAsset);
+
+        // then we liquidate
+        vm.expectRevert(bytes("ACCOUNT_UNHEALTHY"));
+        controller.liquidate(
+            address(2), 
+            markets, 
+            data, 
+            address(mockLiquidator), 
+            bytes("")
+        );
+
+        // and we should have a healthy account
+        assertEq(controller.isHealthy(address(2)), false);
+    }
 }

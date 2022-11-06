@@ -99,8 +99,8 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     // buy assets from account to repay debts
-    function liquidate(address account, address[] calldata markets, bytes[] calldata datas, address liquidator, bytes memory data) external override returns (bool) {
-        require(!this.isHealthy(account), "Account is healthy, cannot liquidate");
+    function liquidate(address account, address[] calldata markets, bytes[] calldata datas, address liquidator, bytes memory data) external override {
+        require(!this.isHealthy(account), "CANNOT_LIQUIDATE");
 
         // transfer assets to liquidator
         for (uint i = 0; i < markets.length; i++) {
@@ -127,8 +127,6 @@ contract Controller is Ownable, Pausable, IController {
         }
 
         // make sure the account is healthy afterwards
-        require(this.isHealthy(account), "Account is unhealthy after liquidation");
-
-        return true;
+        require(this.isHealthy(account), "ACCOUNT_UNHEALTHY");
     }
 }
