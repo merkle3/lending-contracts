@@ -88,42 +88,49 @@ contract UniswapV3 is
     }
 
     // activate a new pool. This means that the pool can now be used as collateral
-    function activatePool(address poolAddress) external onlyOwner {
-        // make sure it's not already activated
-        require(!activatedPools[poolAddress], "pool already activated");
+    function activatePools(address[] calldata poolsAddress) external onlyOwner {
+        for (uint256 i = 0; i < poolsAddress.length; i++) {
+            address poolAddress = poolsAddress[i];
 
-        // get the pool 
-        IUniswapV3Pool pool = IUniswapV3Pool(poolAddress);
+            // make sure it's not already activated
+            require(!activatedPools[poolAddress], "POOL_ACTIVE");
 
-        // require that oracles are set
-        require(
-            oracles[pool.token0()] != address(0),
-            "oracle for token0 not set"
-        );
+            // get the pool 
+            IUniswapV3Pool pool = IUniswapV3Pool(poolAddress);
 
-        // for both tokens
-        require(
-            oracles[pool.token1()] != address(0),
-            "oracle for token1 not set"
-        );
+            address token0 = pool.token0(); // save SLOAD
+            address token1 = pool.token1(); // save SLOAD
 
-        // require that scale factor are set
-        require(
-            tokenScaleFactor[pool.token0()] != 0,
-            "scale factor for token0 not set"
-        );
+            // require that oracles are set
+            require(
+                oracles[token0] != address(0),
+                "MISSING_ORACLE_TOKEN0"
+            );
 
-        // for both tokens
-        require(
-            tokenScaleFactor[pool.token1()] != 0,
-            "scale factor for token1 not set"
-        ); 
+            // for both tokens
+            require(
+                oracles[token1] != address(0),
+                "MISSING_ORACLE_TOKEN1"
+            );
 
-        // activate the pool
-        activatedPools[poolAddress] = true;
+            // require that scale factor are set
+            require(
+                tokenScaleFactor[token0] != 0,
+                "MISSING_SCALE_TOKEN0"
+            );
 
-        // events
-        emit ActivatePool(poolAddress);
+            // for both tokens
+            require(
+                tokenScaleFactor[token1] != 0,
+                "MISSING_SCALE_TOKEN1"
+            ); 
+
+            // activate the pool
+            activatedPools[poolAddress] = true;
+
+            // events
+            emit ActivatePool(poolAddress);
+        }
     }
 
     // pause a pool, this will prevent new assets from being deposited
