@@ -23,6 +23,9 @@ abstract contract IAssetClass is IDebtMarket {
         uint256 tokenId
     );
 
+    // contructor with controller for debt market
+    constructor(address _controller) IDebtMarket(_controller) {}
+
     // debt always returns 0
     function getDebtBalanceUsd(address /*borrower*/) virtual external override returns (uint256) {
         return 0;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >= 0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "forge-std/Test.sol";
 import "../src/markets/MToken.sol";
@@ -26,7 +27,7 @@ contract MTokenTest is Test {
         interestModel = new BaseInterestModel();
         mockToken = new MockERC20("MockUSDC", "mockUSDC");
         mockOracle = new MockV3Aggregator(8, 1e8);
-        mockAsset = new MockAsset();
+        mockAsset = new MockAsset(address(controller));
         mockLiquidator = new MockLiquidator();
 
         tokenMarket = new MToken(
@@ -50,6 +51,11 @@ contract MTokenTest is Test {
 
         // update the answer of aggregator
         mockOracle.updateAnswer(1e8);
+
+        // set the liquidation token
+        mockLiquidator.setToken(mockToken);
+        // set the liquidation market
+        mockLiquidator.setMarket(tokenMarket);
     }
 
     function testHealthyState(uint256 amount) public {
@@ -85,7 +91,7 @@ contract MTokenTest is Test {
         assertEq(controller.isHealthy(address(2)), false);
     }
 
-    function xtestLiquidation(uint256 amount) public {
+    function testLiquidation(uint256 amount) public {
         vm.assume(amount >= 5_000 * Constant.ONE);
         vm.assume(amount <= 8_000 * Constant.ONE);
 
@@ -104,5 +110,27 @@ contract MTokenTest is Test {
 
         // new we can liquidate
         
+        // first, we need to give the liquidator some tokens
+        mockToken.mint(address(mockLiquidator), 10_000 * Constant.ONE);
+        // then we need to tell it to wipe the devt
+        mockLiquidator.setPaybackAmount(address(2), amount);
+
+        address[] memory markets = new address[](1);
+        bytes[] memory data = new bytes[](1);
+
+        markets[0] = address(mockAsset);
+
+        // then we liquidate
+        controller.liquidate(
+            address(2), 
+            // an array of addresses in solidity    
+            markets, 
+            data, 
+            address(mockLiquidator), 
+            bytes("")
+        );
+
+        // and we should have a healthy account
+        assertEq(controller.isHealthy(address(2)), true);
     }
 }

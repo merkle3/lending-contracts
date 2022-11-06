@@ -3,11 +3,15 @@ pragma solidity >=0.5.0;
 pragma experimental ABIEncoderV2;
 
 import "forge-std/console.sol";
+import {IController} from '../../src/interfaces/IController.sol';
 import '../../src/interfaces/IAssetClass.sol';
 
 // used for testing
 contract MockAsset is IAssetClass {
     mapping(address => uint256) amountUsd;
+
+    // set the controller
+    constructor(address _controller) IAssetClass(_controller) {}
 
     // set the test amount
     function setAmountUsd(address account, uint256 _amountUsd) public {

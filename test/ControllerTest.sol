@@ -24,7 +24,7 @@ contract ControllerTest is Test {
         interestModel = new BaseInterestModel();
         mockToken = new MockERC20("MockUSDC", "mockUSDC");
         mockOracle = new MockV3Aggregator(8, 1e8);
-        mockAsset = new MockAsset();
+        mockAsset = new MockAsset(address(controller));
 
         tokenMarket = new MToken(
             address(controller),
@@ -49,7 +49,7 @@ contract ControllerTest is Test {
         assertEq(controller.getTotalCollateralUsd(addr), 0);
         assertEq(controller.isHealthy(addr), true);
     }
-    
+
     function testSetPlatformFee(uint256 fee) public {
         controller.setPlatformFee(fee);
         assertEq(controller.platformFee(), fee);

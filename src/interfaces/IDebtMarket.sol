@@ -10,6 +10,11 @@ abstract contract IDebtMarket {
     // the controller
     IController public controller;
 
+    // contructor with controller
+    constructor(address _controller) {
+        controller = IController(_controller);
+    }
+
     modifier onlyController {
         require(msg.sender == address(controller), "ONLY_CONTROLLER");
         _;

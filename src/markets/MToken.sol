@@ -77,7 +77,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
         // reward 5M tokens over 3 years
         // 3 years = 94608000 seconds
         /// 5M = 5000000000000000000000000 WEI
-    ) ERC4626(ERC20(assetAddress), "Merkle USDC", "mUSDC") Rewards(ERC20(address(0)), block.timestamp, 5000000000000000000000000, 94608000) {
+    ) ERC4626(ERC20(assetAddress), "Merkle USDC", "mUSDC") Rewards(ERC20(address(0)), block.timestamp, 5000000000000000000000000, 94608000) IDebtMarket(controller) {
         _controller = controller;
         lastAccrualOfInterest = block.timestamp;
         oracle = _oracle;
@@ -297,7 +297,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
         require(borrowed[account] >= borrowShares, "OVER_PAID");
 
         // transfer the amount to vault
-        asset.safeTransferFrom(account, address(this), amountUnderlying);
+        asset.safeTransferFrom(msg.sender, address(this), amountUnderlying);
 
         // update total borrow
         // prevent underflow
@@ -336,7 +336,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
         require(borrowed[account] >= shares, "OVER_PAID");
 
         // transfer the amount to vault
-        asset.safeTransferFrom(account, address(this), amountUnderlying);
+        asset.safeTransferFrom(msg.sender, address(this), amountUnderlying);
 
         // update total borrow
         totalBorrows = totalBorrows.sub(amountUnderlying);

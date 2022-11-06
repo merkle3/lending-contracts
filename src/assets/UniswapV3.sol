@@ -67,7 +67,7 @@ contract UniswapV3 is
 
     constructor(
         address _controller
-    ) ERC721("Merkle Uniswap V3 Position", "mUNI3") {
+    ) ERC721("Merkle Uniswap V3 Position", "mUNI3") IAssetClass(_controller) {
         // register owner
         transferOwnership(msg.sender);
 

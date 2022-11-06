@@ -27,7 +27,7 @@ contract BorrowTest is Test {
         interestModel = new BaseInterestModel();
         mockToken = new MockERC20("MockUSDC", "mockUSDC");
         mockOracle = new MockV3Aggregator(8, 1e8);
-        mockAsset = new MockAsset();
+        mockAsset = new MockAsset(address(controller));
 
         tokenMarket = new MToken(
             address(controller),
