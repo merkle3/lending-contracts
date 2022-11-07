@@ -63,7 +63,7 @@ contract DeployPolygon is Script {
 
         // set the token scales
         uniswapAssets.setScaleFactor(WETH, 1); // ETH
-        uniswapAssets.setScaleFactor(DAI, 1); // DAI
+        uniswapAssets.setScaleFactor(WMATIC, 1); // WMATIC
         uniswapAssets.setScaleFactor(USDC, 1e12); // USDC, 8 decimals scaled to 18
 
         // list of pools to activate
