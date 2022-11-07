@@ -7,16 +7,16 @@ import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
 contract BaseInterestModel is IInterestModel {
     using FixedPointMathLib for uint256;
 
-    uint constant expScale = 1e18;
+    uint constant public expScale = 1e18;
 
-    uint constant TARGET_APY = 1_000; // 10%
+    uint constant public TARGET_APY = 1_000; // 10%
 
-    uint constant UTILIZATION_TARGET = 8_500; // add a multiplier after 85%
+    uint constant public UTILIZATION_TARGET = 8_500; // add a multiplier after 85%
 
-    uint constant MAX_APY = 7_000; // 70% when 100% utilization
+    uint constant public MAX_APY = 7_000; // 70% when 100% utilization
 
     // 10_000 = 1%
-    function getBorrowRate(uint cash, uint borrows) override virtual external view returns (uint) {
+    function getInterestRate(uint cash, uint borrows) override virtual external view returns (uint) {
         if(borrows == 0) {
             return 0;
         }

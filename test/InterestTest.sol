@@ -69,4 +69,32 @@ contract InterestTest is Test {
         assertGt(tokenMarket.getBorrowBalance(address(2)), amount * Constant.ONE);
         assertGt(tokenMarket.totalBorrows(), amount * Constant.ONE);
     }
+
+    function testZeroInterest(uint amount) public {
+        // make sure the best interest model returns zero
+        assertEq(interestModel.getInterestRate(amount, 0), 0);
+    }
+
+    function testMaxApy(uint amount) public {
+        // make sure it's les than 1 trillion
+        vm.assume(amount < 1e12 * Constant.ONE);
+
+        // and more than 0
+        vm.assume(amount > 0);
+
+        // make sure the best interest model returns the max apy
+        assertEq(interestModel.getInterestRate(0, amount), 7_000);
+    }
+
+    function testTargetUtilization() public {
+        assertEq(interestModel.getInterestRate(1_500, 8_500), 1_000);
+    }
+
+    function testBelowTargetUtilization() public {
+        assertLt(interestModel.getInterestRate(2_500, 7_500), 1_000);
+    }
+
+    function testAboveTargetUtilization() public {
+        assertGt(interestModel.getInterestRate(1_000, 9_000), 1_000);
+    }
 }

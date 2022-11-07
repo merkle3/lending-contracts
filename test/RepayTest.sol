@@ -184,7 +184,7 @@ contract RepayTest is Test {
         mockAsset.setAmountUsd(address(2), 20_000);
 
         vm.prank(address(2));
-        tokenMarket.borrow(amount * Constant.ONE, address(2));
+        tokenMarket.borrow(amount * Constant.ONE, address(4));
 
         // repay just 1k
         mockToken.mint(address(3), amount * Constant.ONE);

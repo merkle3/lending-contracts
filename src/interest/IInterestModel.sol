@@ -8,5 +8,5 @@ interface IInterestModel {
       * @param borrows The total amount of borrows the market has outstanding
       * @return The borrow rate per year (as a percentage)
       */
-    function getBorrowRate(uint cash, uint borrows) external view returns (uint);
+    function getInterestRate(uint cash, uint borrows) external view returns (uint);
 }

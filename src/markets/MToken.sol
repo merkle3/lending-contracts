@@ -154,7 +154,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
     function getBorrowBalance(address account) external returns (uint256) {
         this.accrueInterest();
 
-        return borrowed[account].mulDivUp(getBorrowRate(), expScale);
+        return borrowed[account].mulDivUp(getInterestRate(), expScale);
     }
 
     // ----- REWARD FUNCTIONS -----
@@ -221,14 +221,14 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
     /// @dev this method calls the interest model
     function getInterest() external view returns (uint) {
         // call the interest model to get the current APY
-        return IInterestModel(interestModel).getBorrowRate(cashReserves, totalBorrows);
+        return IInterestModel(interestModel).getInterestRate(cashReserves, totalBorrows);
     }
 
     // ----- BORROW Functions -----
 
     /// @notice returns the rate between borrow shares and borrow amount
     /// @return rate the exchange rate between borrow shares and total amouunt borrowed
-    function getBorrowRate() public returns (uint) {
+    function getInterestRate() public returns (uint) {
         // accrue interest
         this.accrueInterest();
 
@@ -256,7 +256,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
         require(receiver != address(0), "INVALID_RECEIVER");
         
         // get the current borrow rate
-        uint borrowRate = getBorrowRate();
+        uint borrowRate = getInterestRate();
 
         // issue borrow shares
         uint borrowShares = amountUnderlying * expScale / borrowRate;
@@ -288,7 +288,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
         this.accrueInterest();
 
         // get exchange rate from borrow shares to underlying
-        uint rate = getBorrowRate();
+        uint rate = getInterestRate();
 
         // get the loan shares that are being repayed
         uint borrowShares = amountUnderlying.mulDivUp(expScale, rate);
@@ -322,7 +322,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
         this.accrueInterest();
 
         // get exchange rate from borrow shares to underlying
-        uint rate = getBorrowRate();
+        uint rate = getInterestRate();
 
         // calculate how much it will be
         uint amountUnderlying = shares.mulDivUp(rate, expScale);
