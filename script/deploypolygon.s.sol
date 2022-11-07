@@ -15,10 +15,10 @@ contract DeployPolygon is Script {
     address public constant USDC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
 
     // the usdc oracle address
-    address public constant USDC_ORACLE = 0xfe4a8cc5b5b2366c1b58bea3858e81843581b2f7;
+    address public constant USDC_ORACLE = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
 
     // the eth oracle address
-    address public constant ETH_ORACLE = 0xf9680d99d6c9589e2a93a78a04a279e509205945;
+    address public constant ETH_ORACLE = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
 
     // wrapped eth
     address public constant WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
@@ -27,7 +27,7 @@ contract DeployPolygon is Script {
     address public constant WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
     // matic oracle
-    address public constant WMATIC_ORACLE = 0xab594600376ec9fd91f8e885dadf0ce036862de0;
+    address public constant WMATIC_ORACLE = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -70,13 +70,13 @@ contract DeployPolygon is Script {
         address[] memory pools = new address[](3);
 
         // USDC-WETH 0.05%
-        pools[0] = 0x45dda9cb7c25131df268515131f647d726f50608;
+        pools[0] = 0x45dDa9cb7c25131DF268515131f647d726f50608;
 
         // USDC-MATIC 0.05%
-        pools[1] = 0xa374094527e1673a86de625aa59517c5de346d32;
+        pools[1] = 0xA374094527e1673A86dE625aa59517c5dE346d32;
 
         // MATIC-WETH 0.3%
-        pools[2] = 0x167384319b41f7094e62f7506409eb38079abff8;
+        pools[2] = 0x167384319B41F7094e62f7506409Eb38079AbfF8;
 
         // activate pools
         uniswapAssets.activatePools(pools);
