@@ -31,4 +31,7 @@ library Constant {
 
     // big usdc balance owner
     address public constant BIG_USDC_BALANCE_OWNER = 0x55FE002aefF02F77364de339a1292923A15844B8;
+
+    // big eth balance owner
+    address public constant BIG_ETH_BALANCE_OWNER = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 }

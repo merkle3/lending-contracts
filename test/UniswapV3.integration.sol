@@ -2,10 +2,12 @@
 pragma solidity >= 0.5.0;
 
 // uniswapv3 needs to be tested in a integration environment
+import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/Controller.sol";
 import "./Constant.sol";
 import "../src/assets/UniswapV3.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract UniswapV3Integration is Test {
     Controller public controller;
@@ -35,6 +37,17 @@ contract UniswapV3Integration is Test {
         assertEq(uniswapV3.activatedPools(Constant.WETH_USDC_POOL), true);  
 
         controller.addDebtMarket(address(uniswapV3), 8_000);
+
+        // impersonate the big usdc holder and mint a uniswap v3
+        // position
+
+        // 1. we need to get some weth
+        vm.prank(Constant.BIG_ETH_BALANCE_OWNER);
+        // send the eth to the wrapped eth contract
+        ERC20(Constant.WETH).transfer(Constant.BIG_USDC_BALANCE_OWNER, 100 * Constant.ONE);
+
+        // log balance
+        console.log("WETH balance", ERC20(Constant.WETH).balanceOf(Constant.BIG_USDC_BALANCE_OWNER));
     }
 
     function testAddPool() public {

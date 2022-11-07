@@ -1,4 +1,3 @@
-include .env
 .PHONY: test snapshot integration
 
 test:
