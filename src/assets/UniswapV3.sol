@@ -60,10 +60,10 @@ contract UniswapV3 is
     uint256 public minDeposit = 200 * 10**8;
 
     // when a new pool is actived
-    event ActivatePool(address pool);
+    event ActivatedPool(address pool);
 
     // when a pool is deactivated
-    event PausePool(address pool);
+    event PausedPool(address pool);
 
     constructor(
         address _controller
@@ -129,7 +129,7 @@ contract UniswapV3 is
             activatedPools[poolAddress] = true;
 
             // events
-            emit ActivatePool(poolAddress);
+            emit ActivatedPool(poolAddress);
         }
     }
 
@@ -137,22 +137,13 @@ contract UniswapV3 is
     // TODO: should we still count assets that are deposited as collateral?
     function pausePool(address poolAddress) external onlyOwner {
         // only deactivate active pools
-        require(activatedPools[poolAddress], "pool not activated");
+        require(activatedPools[poolAddress], "POOL_NOT_ACTIVE");
 
         // pause the pool
         activatedPools[poolAddress] = false;
 
         // events
-        emit PausePool(poolAddress);
-    }
-
-    // a method for the protocol to collect fees
-    function collectFee(address token) external onlyOwner {
-        // send all to the fee collector
-        IERC20(token).transfer(
-            msg.sender,
-            IERC20(token).balanceOf(address(this))
-        );
+        emit PausedPool(poolAddress);
     }
 
     // get the amount of token that a user could withdraw
