@@ -78,4 +78,124 @@ contract RepayTest is Test {
         assertEq(tokenMarket.borrowed(address(2)), 0);
         assertEq(tokenMarket.totalBorrows(), 0);
     }
+
+    function testRepayUnderlyingAmount(uint amount) public {
+        vm.assume(amount > 1_000);
+        vm.assume(amount < 10_000);
+
+        // borrow some funds
+        mockAsset.setAmountUsd(address(2), 20_000);
+
+        vm.prank(address(2));
+        tokenMarket.borrow(amount * Constant.ONE, address(2));
+
+        // repay just 1k
+        mockToken.mint(address(2), 1_000 * Constant.ONE);
+
+        vm.prank(address(2));
+        mockToken.approve(address(tokenMarket), 1_000 * Constant.ONE);
+
+        vm.prank(address(2));
+        tokenMarket.repay(address(2), 1_000 * Constant.ONE);
+
+        // make sure we still have the rest of the debt
+        assertEq(tokenMarket.getBorrowBalance(address(2)), amount * Constant.ONE - 1_000 * Constant.ONE);
+    }
+
+    function testRepayTooMuchUnderlying(uint amount) public {
+        vm.assume(amount > 1_000);
+        vm.assume(amount < 10_000);
+
+        // borrow some funds
+        mockAsset.setAmountUsd(address(2), 20_000);
+
+        vm.prank(address(2));
+        tokenMarket.borrow(amount * Constant.ONE, address(2));
+
+        // repay just 1k
+        mockToken.mint(address(2), 1_000 * Constant.ONE);
+
+        vm.prank(address(2));
+        mockToken.approve(address(tokenMarket), 1_000 * Constant.ONE);
+
+        vm.prank(address(2));
+        vm.expectRevert(bytes("OVER_PAID"));
+        tokenMarket.repay(address(2), 11_000 * Constant.ONE);
+
+        // make sure we still have the debt
+        assertEq(tokenMarket.getBorrowBalance(address(2)), amount * Constant.ONE);
+    }
+
+    function testRepayTooMuchShares(uint amount) public {
+        vm.assume(amount > 1_000);
+        vm.assume(amount < 10_000);
+
+        // borrow some funds
+        mockAsset.setAmountUsd(address(2), 20_000);
+
+        vm.prank(address(2));
+        tokenMarket.borrow(amount * Constant.ONE, address(2));
+
+        // repay just 1k
+        mockToken.mint(address(2), 1_000 * Constant.ONE);
+
+        vm.prank(address(2));
+        mockToken.approve(address(tokenMarket), 1_000 * Constant.ONE);
+
+        vm.prank(address(2));
+        vm.expectRevert(bytes("OVER_PAID"));
+        tokenMarket.repayShares(address(2), 11_000 * Constant.ONE);
+
+        // make sure we still have the debt
+        assertEq(tokenMarket.getBorrowBalance(address(2)), amount * Constant.ONE);
+    }
+
+    function testRepayNoFunds(uint amount) public {
+        vm.assume(amount > 1_000);
+        vm.assume(amount < 10_000);
+
+        // borrow some funds
+        mockAsset.setAmountUsd(address(2), 20_000);
+
+        vm.prank(address(2));
+        // send the funds somewhere else so we don't have them
+        tokenMarket.borrow(amount * Constant.ONE, address(3));
+
+        vm.prank(address(2));
+        mockToken.approve(address(tokenMarket), 1_000 * Constant.ONE);
+
+        vm.prank(address(2));
+        vm.expectRevert(bytes("TRANSFER_FROM_FAILED"));
+        tokenMarket.repay(address(2), 1 * Constant.ONE);
+
+        vm.prank(address(2));
+        vm.expectRevert(bytes("TRANSFER_FROM_FAILED"));
+        tokenMarket.repayShares(address(2), 1 * Constant.ONE);
+
+        // make sure we still have the debt
+        assertEq(tokenMarket.getBorrowBalance(address(2)), amount * Constant.ONE);
+    }
+    
+    function testRepayOtherAccount(uint amount) public {
+        vm.assume(amount > 1_000);
+        vm.assume(amount < 10_000);
+
+        // borrow some funds
+        mockAsset.setAmountUsd(address(2), 20_000);
+
+        vm.prank(address(2));
+        tokenMarket.borrow(amount * Constant.ONE, address(2));
+
+        // repay just 1k
+        mockToken.mint(address(3), amount * Constant.ONE);
+
+        vm.prank(address(3));
+        mockToken.approve(address(tokenMarket), amount * Constant.ONE);
+
+        vm.prank(address(3));
+        tokenMarket.repay(address(2), amount * Constant.ONE);
+
+        // make sure the debt is cleared
+        assertEq(tokenMarket.getBorrowBalance(address(2)), 0);
+    }
 }
