@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 library Constant {
     uint constant ONE = 1e18;
+    uint constant ONE_USDC = 1e6;
 
     // the usdc address
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -29,9 +30,12 @@ library Constant {
     // dai oracle
     address public constant DAI_ORACLE = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
 
-    // big usdc balance owner
+    // big  usdc balance owner
     address public constant BIG_USDC_BALANCE_OWNER = 0x55FE002aefF02F77364de339a1292923A15844B8;
 
     // big eth balance owner
     address public constant BIG_ETH_BALANCE_OWNER = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
+
+    // uniswap v3 position manager
+    address public constant UNISWAP_V3_POSITION_MANAGER = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
 }

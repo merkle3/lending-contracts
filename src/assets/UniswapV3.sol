@@ -40,9 +40,9 @@ contract UniswapV3 is
     using BytesLib for bytes;
 
     // uniswapv3 addresses
-    INonfungiblePositionManager constant UniswapNftManager =
+    INonfungiblePositionManager constant public UniswapNftManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
-    address constant UNISWAP_V3_FACTORY =
+    address constant public UNISWAP_V3_FACTORY =
         0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     // activated pools, that can be deposited and borrowed

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >= 0.5.0;
+pragma experimental ABIEncoderV2;
 
 // uniswapv3 needs to be tested in a integration environment
 import "forge-std/console.sol";
@@ -8,6 +9,8 @@ import "../src/Controller.sol";
 import "./Constant.sol";
 import "../src/assets/UniswapV3.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import {INonfungiblePositionManager} from "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
 contract UniswapV3Integration is Test {
     Controller public controller;
@@ -38,16 +41,22 @@ contract UniswapV3Integration is Test {
 
         controller.addDebtMarket(address(uniswapV3), 8_000);
 
-        // impersonate the big usdc holder and mint a uniswap v3
-        // position
-
         // 1. we need to get some weth
         vm.prank(Constant.BIG_ETH_BALANCE_OWNER);
         // send the eth to the wrapped eth contract
-        ERC20(Constant.WETH).transfer(Constant.BIG_USDC_BALANCE_OWNER, 100 * Constant.ONE);
+        Constant.WETH.call{value: 100 ether}(bytes(""));
 
-        // log balance
-        console.log("WETH balance", ERC20(Constant.WETH).balanceOf(Constant.BIG_USDC_BALANCE_OWNER));
+        // send eth to the address 1
+        vm.prank(Constant.BIG_ETH_BALANCE_OWNER);
+        address(1).call{value: 10 ether}(bytes(""));
+
+        // transfer to address(1)
+        vm.prank(Constant.BIG_ETH_BALANCE_OWNER);
+        ERC20(Constant.WETH).transfer(address(1), 100 ether);
+
+        // transfer usdc to address(1)
+        vm.prank(Constant.BIG_USDC_BALANCE_OWNER);
+        ERC20(Constant.USDC).transfer(address(1), 100_000_000 * Constant.ONE_USDC);
     }
 
     function testAddPool() public {
@@ -83,5 +92,42 @@ contract UniswapV3Integration is Test {
         // it should fail
         vm.expectRevert(bytes("POOL_NOT_ACTIVE"));
         uniswapV3.pausePool(Constant.DAI_USDC_POOL);
+    }
+
+    function testCreatePosition() public {
+        // approve the uniswap v3 contract to spend our weth
+        vm.prank(address(1));
+        ERC20(Constant.WETH).approve(Constant.UNISWAP_V3_POSITION_MANAGER, 2000 * Constant.ONE);
+        vm.prank(address(1));
+        ERC20(Constant.USDC).approve(Constant.UNISWAP_V3_POSITION_MANAGER, 2000 * Constant.ONE);
+
+        // get the slot 0 of the pool
+        (, int24 poolTick, , , , , ) = IUniswapV3Pool(
+            Constant.WETH_USDC_POOL
+        ).slot0();
+
+        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
+            token0: Constant.USDC, // token 0
+            token1: Constant.WETH, // token 1
+            fee: 500, // fee
+            tickLower: poolTick-10, // min tick
+            tickUpper: poolTick+10, // max tick
+            amount0Desired: 1600 * Constant.ONE_USDC, // amount0Desired
+            amount1Desired: 1 * Constant.ONE, // amount1Desired
+            amount0Min: 0, // amount0Min
+            amount1Min: 0, // amount1Min
+            recipient: address(1), // recipient
+            deadline: block.timestamp + 1000 // deadline
+        });
+
+        // let's create a position
+        (
+            uint256 tokenId,
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        ) = INonfungiblePositionManager(Constant.UNISWAP_V3_POSITION_MANAGER).mint(params);
+
+        assertEq(tokenId, 1);
     }
 }
