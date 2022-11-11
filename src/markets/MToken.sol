@@ -13,7 +13,6 @@ import {Rewards} from '../rewards/Rewards.sol';
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {IERC3156FlashBorrower} from '../interfaces/IERC3156FlashBorrower.sol';
 import {AggregatorV3Interface} from '../interfaces/AggregatorV3Interface.sol';
 import {FixedPointMathLib} from '../libraries/FixedPointMathLib.sol';
 import {BytesLib} from '../libraries/BytesLib.sol';
