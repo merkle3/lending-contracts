@@ -74,6 +74,19 @@ contract Controller is Ownable, Pausable, IController {
         return totalCollateralForAccount;
     }
 
+    // get the total amount of collateral the user has put up
+    function getTotalDepositslUsd(address account) view public returns(uint256) {
+        // get the total deposits
+        uint totalDepositsForAccount = 0;
+
+        for(uint24 i = 0; i < debtMarketsList.length; i++) {
+            // add up all the deposits from all the debt markets
+            totalDepositsForAccount += IDebtMarket(debtMarketsList[i]).getCollateralUsd(account);
+        }
+
+        return totalDepositsForAccount;
+    }
+
     /**
      * Get the total amount a user has borrowed from the token market
      * @param account the user

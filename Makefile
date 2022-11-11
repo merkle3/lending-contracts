@@ -12,3 +12,7 @@ snapshot:
 cov: lcov.info
 lcov.info: 
 	forge coverage --report lcov
+
+# run the forge script to deploy on eth
+deploy.local:
+	forge script script/deployeth.s.sol:DeployEth --fork-url http://localhost:8545 --broadcast

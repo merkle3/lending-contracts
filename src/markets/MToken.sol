@@ -14,12 +14,11 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC3156FlashBorrower} from '../interfaces/IERC3156FlashBorrower.sol';
-import {IERC3156FlashLender} from '../interfaces/IERC3156FlashLender.sol';
 import {AggregatorV3Interface} from '../interfaces/AggregatorV3Interface.sol';
 import {FixedPointMathLib} from '../libraries/FixedPointMathLib.sol';
 import {BytesLib} from '../libraries/BytesLib.sol';
 
-contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable, Rewards {
+contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
     using SafeMath for uint;
@@ -66,6 +65,17 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
 
     // token scale
     uint tokenScale;
+
+    // the mutex
+    bool locked;
+
+    // lock modifier
+    modifier lock() {
+        require(!locked, "LOCKED");
+        locked = true;
+        _;
+        locked = false;
+    }
 
     constructor(
         address controller, 
@@ -248,7 +258,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
     /// they are reponsible for.
     /// @param amountUnderlying the amount to borrow
     /// @param receiver the account to receive the loaned underlying amount
-    function borrow(uint256 amountUnderlying, address receiver) external updateReward(msg.sender) whenNotPaused {
+    function borrow(uint256 amountUnderlying, address receiver) external lock updateReward(msg.sender) whenNotPaused {
         // check if there is enough cash
         require(cashReserves >= amountUnderlying, "NO_RESERVES");
 
@@ -283,7 +293,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
     /// @notice repay a loan
     /// @param account the account to repay
     /// @param amountUnderlying the amount to repay
-    function repay(address account, uint256 amountUnderlying) external updateReward(account) {
+    function repay(address account, uint256 amountUnderlying) external lock updateReward(account) {
          // calculate reserves
         this.accrueInterest();
 
@@ -317,7 +327,7 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
     /// interest being calculated at every block.
     /// @param account the account to repay
     /// @param shares the amount of shares to repay
-    function repayShares(address account, uint256 shares) external updateReward(account) {
+    function repayShares(address account, uint256 shares) external lock updateReward(account) {
          // calculate reserves
         this.accrueInterest();
 
@@ -405,80 +415,5 @@ contract MToken is IDebtMarket, ERC4626, IERC3156FlashLender, Ownable, Pausable,
 
         // send the shares to the liquidator
         _transfer(account, liquidator, shares);
-    }
-
-    // ------- Flash Loan provider (ERC3156) --------
-
-    /// @notice The amount of currency available to be lent.
-    /// @param token The loan currency.
-    /// @return The amount of `token` that can be borrowed.
-    function maxFlashLoan(
-        address token
-    ) override external view returns (uint256) {
-        if(token != address(asset)) return 0;
-
-        return cashReserves;
-    }
-
-    /// @notice The fee to be charged for a given loan.
-    /// @param token The loan currency.
-    /// @param amount The amount of tokens lent.
-    /// @return The amount of `token` to be charged for the loan, on top of the returned principal.
-    function flashFee(
-        address token,
-        uint256 amount
-    ) override external view returns (uint256) {
-        if(token != address(asset)) return 0;
-
-        return amount * flashloanFee / 10000;
-    }
-
-    /// @notice Initiate a flash loan.
-    /// @param receiver The receiver of the tokens in the loan, and the receiver of the callback.
-    /// @param token The loan currency.
-    /// @param amount The amount of tokens lent.
-    /// @param data Arbitrary data structure, intended to contain user-defined parameters.
-    function flashLoan(
-        IERC3156FlashBorrower receiver,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) override external returns (bool) {
-        if(token != address(asset)) revert("Token not supported");
-
-        // calculate the fee
-        uint fee = amount * flashloanFee / 10000;
-
-        // check that the cash reserves are enough
-        require(amount <= cashReserves, "Not enough cash reserves");
-
-        // transfer the cash reserves to the borrower
-         asset.transferFrom(
-            address(this),
-            address(receiver),
-            amount
-        );
-
-        uint balanceBefore =  asset.balanceOf(address(this));
-
-        // call the callback
-        receiver.onFlashLoan(
-            msg.sender,
-            token,
-            amount,
-            fee,
-            data
-        );
-
-        // make sure we got repayed
-        uint balanceAfter =  asset.balanceOf(address(this));
-
-        // make sure we got repayed
-        require(balanceAfter >= balanceBefore + fee, "Not enough repayed");
-
-        // add it to cash reserves (should be just fee but can be more)
-        cashReserves += balanceAfter - balanceBefore;
-
-        return true;
     }
 }
