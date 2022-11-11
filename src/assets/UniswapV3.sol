@@ -449,6 +449,9 @@ contract UniswapV3 is
         // burn the token
         _burn(tokenId);
 
+        // move it back to the manager
+        UniswapNftManager.safeTransferFrom(address(this), receiver, tokenId);
+
         // call the callback
         if (receiver.isContract()) {
             // call the callback if it's a contract
@@ -477,9 +480,6 @@ contract UniswapV3 is
         // emit withdraw
         emit Withdraw(msg.sender, receiver, owner, tokenId);
 
-        // move it back to the manager
-        UniswapNftManager.safeTransferFrom(address(this), receiver, tokenId);
-
         return true;
     }
 
@@ -497,20 +497,6 @@ contract UniswapV3 is
 
         // make sure the position is tracked by enumerable
         super._beforeTokenTransfer(from, to, tokenId);
-    }
-
-    // allow stacker to re-invest their fees automatically
-    function increateLiquidity(
-        INonfungiblePositionManager.IncreaseLiquidityParams memory params
-    ) public {
-        // only owner of position can collect fees
-        require(
-            ownerOf(params.tokenId) == msg.sender,
-            "Only owner can collect fees"
-        );
-
-        // increase liquidity
-        UniswapNftManager.increaseLiquidity(params);
     }
 
     // receive NFTs

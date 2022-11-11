@@ -16,6 +16,9 @@ import {Rewards} from './rewards/Rewards.sol';
  The controller makes sure users are solvant when
  borrowing or depositing collaterals.
  */
+
+// TODO: put a re-entrency lock on functions with callbacks
+
 contract Controller is Ownable, Pausable, IController {
     using FixedPointMathLib for uint256;
 
@@ -75,7 +78,7 @@ contract Controller is Ownable, Pausable, IController {
     }
 
     // get the total amount of collateral the user has put up
-    function getTotalDepositslUsd(address account) view public returns(uint256) {
+    function getTotalDepositsUsd(address account) view public returns(uint256) {
         // get the total deposits
         uint totalDepositsForAccount = 0;
 
