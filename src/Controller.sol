@@ -11,6 +11,7 @@ import {FixedPointMathLib} from './libraries/FixedPointMathLib.sol';
 import {IController} from './interfaces/IController.sol';
 import {IMerkleLiquidator} from './interfaces/IMerkleLiquidator.sol';
 import {Rewards} from './rewards/Rewards.sol';
+import {Lockable} from './utils/Lockable.sol';
 
 /**
  The controller makes sure users are solvant when
@@ -19,14 +20,14 @@ import {Rewards} from './rewards/Rewards.sol';
 
 // TODO: put a re-entrency lock on functions with callbacks
 
-contract Controller is Ownable, Pausable, IController {
+contract Controller is Ownable, Pausable, Lockable, IController {
     using FixedPointMathLib for uint256;
 
     // list of debt markets
     address[] public debtMarketsList;
 
-    // specific rates for markets
-    mapping(address => uint256) public collateralRates;
+    // map of markets
+    mapping(address => bool) public debtMarkets;
 
     // disabled markets
     mapping(address => bool) public disabledMarkets;
@@ -56,25 +57,17 @@ contract Controller is Ownable, Pausable, IController {
         return platformFees;
     }
 
-    // get the total amount of collateral the user has put up
-    function getTotalCollateralUsd(address account) view public returns(uint256) {
-        // get the total collateral
-        uint totalCollateralForAccount = 0;
+    // get the total amount an account is allowed to borrow
+    function getMaxBorrowUsd(address account) view public returns(uint256) {
+        // get the total amount
+        uint maxBorrowAmount = 0;
 
         for(uint24 i = 0; i < debtMarketsList.length; i++) {
-            // by default, we allow a certain usage of collateral
-            uint256 rate = collateralRates[debtMarketsList[i]];
-
-            // if disabled, don't call it
-            if (disabledMarkets[debtMarketsList[i]]) {
-                continue;
-            }
-
-            // add up all the collateral from all asset classes
-            totalCollateralForAccount += IDebtMarket(debtMarketsList[i]).getCollateralUsd(account).mulDivDown(rate, 10_000);
+            // add up all the debt market borrow authorization
+            maxBorrowAmount += IDebtMarket(debtMarketsList[i]).getMaxBorrowUsd(account);
         }
 
-        return totalCollateralForAccount;
+        return maxBorrowAmount;
     }
 
     // get the total amount of collateral the user has put up
@@ -108,14 +101,16 @@ contract Controller is Ownable, Pausable, IController {
 
     // checks if account is healthy
     function isHealthy(address account) external override returns(bool) {
-        uint256 totalCollateral = getTotalCollateralUsd(account);
+        uint256 maxBorrow = getMaxBorrowUsd(account);
         uint256 totalBorrow = getTotalBorrowUsd(account);        
 
-        return totalBorrow <= totalCollateral;
+        // max borrow can be zero, in this case the 
+        // account needs to be healthy
+        return totalBorrow <= maxBorrow;
     }
 
     // buy assets from account to repay debts
-    function liquidate(address account, address[] calldata markets, bytes[] calldata datas, address liquidator, bytes memory data) external override {
+    function liquidate(address account, address[] calldata markets, bytes[] calldata datas, address liquidator, bytes memory data) lock external override {
         require(!this.isHealthy(account), "CANNOT_LIQUIDATE");
 
         // transfer assets to liquidator
@@ -149,15 +144,15 @@ contract Controller is Ownable, Pausable, IController {
     /// ------ ADMIN FUNCTIONS ---- 
     /// @notice add a new market
     /// @param market the market to add
-    function addDebtMarket(address market, uint256 collateralRate) external onlyOwner {
-        // require that isn't not added yet
-        require(collateralRates[market] == 0, "MARKET_ALREADY_ADDED");
+    function addDebtMarket(address market) external onlyOwner {
+        // make sure the market doesn't exist
+        require(debtMarkets[market] == false, "MARKET_EXISTS");
 
         // add market to list
         debtMarketsList.push(market);
 
-        // set the collateral rate
-        collateralRates[market] = collateralRate;
+        // mark the map
+        debtMarkets[market] = true;
 
         // event
         emit DebtMarketAdded(market);
@@ -172,20 +167,13 @@ contract Controller is Ownable, Pausable, IController {
         // emit
         emit PlatformFeeChanged(fee);
     }
-
-    /// @notice set the collateral rate for this market
-    /// @param market the market to set the rate of
-    function setCollateralRate(address market, uint256 rate) external onlyOwner {
-        // update the rate
-        collateralRates[market] = rate;
-
-        // emit
-        emit CollateralRateChanged(market, rate);
-    }
     
     /// @notice set the disable state for a market
     /// @param market the market to disable/re-able
     function setDisabledMarket(address market, bool disabled) external onlyOwner {
+        // make sure the market exists
+        require(debtMarkets[market] == true, "MARKET_NOT_EXISTS");
+
         // update the status of the market
         disabledMarkets[market] = disabled;
 

@@ -16,8 +16,15 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {AggregatorV3Interface} from '../interfaces/AggregatorV3Interface.sol';
 import {FixedPointMathLib} from '../libraries/FixedPointMathLib.sol';
 import {BytesLib} from '../libraries/BytesLib.sol';
+import {Lockable} from '../utils/Lockable.sol';
 
-contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
+contract MToken is 
+    IDebtMarket, 
+    ERC4626,
+    Ownable, 
+    Pausable, 
+    Rewards
+{
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
     using SafeMath for uint;
@@ -64,17 +71,6 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
 
     // token scale
     uint tokenScale;
-
-    // the mutex
-    bool locked;
-
-    // lock modifier
-    modifier lock() {
-        require(!locked, "LOCKED");
-        locked = true;
-        _;
-        locked = false;
-    }
 
     constructor(
         address controller, 
@@ -142,13 +138,13 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
 
     /// @notice override the function that updates interest
     function updateInterest() internal virtual override {
-        this.accrueInterest();
+        accrueInterest();
     }
 
     /// @notice return the balance in usd 
     /// @param borrower the borrower whose balance to check
     function getDebtBalanceUsd(address borrower) override public returns (uint256) {
-        this.accrueInterest();
+        accrueInterest();
 
         AggregatorV3Interface tokenAggr = AggregatorV3Interface(oracle);
 
@@ -157,11 +153,21 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
         // chainlink oracles return 8 decimals quotes
         return this.getBorrowBalance(borrower).mulDivUp(uint256(rate), tokenScale);
     }
+
+    // get the max borrow usd
+    function getMaxBorrowUsd(address /*borrower*/) override public view returns (uint256) {
+        return 0;
+    }
+    
+    // get the total collateral usd
+    function getCollateralUsd(address /*borrower*/) override public view returns (uint256) {
+        return 0;
+    }
     
     /// @notice return the balance in underlying asset
     /// @param account the borrower whose balance to check
     function getBorrowBalance(address account) external returns (uint256) {
-        this.accrueInterest();
+        accrueInterest();
 
         return borrowed[account].mulDivUp(getInterestRate(), expScale);
     }
@@ -169,7 +175,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
     // ----- REWARD FUNCTIONS -----
     /// @notice override the reward function to accrue interest
     function totalRewardSupplyBasis() external override returns (uint256) {
-        this.accrueInterest();
+        accrueInterest();
 
         // total borrows is both owned by lenders and borrowers
         return (totalBorrows*2) + cashReserves;
@@ -178,7 +184,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
     /// @notice how much of the reward is owned by the user
     /// @param account the user whose reward to check
     function rewardSupplyBasis(address account) external virtual override returns (uint256) {
-        this.accrueInterest();
+        accrueInterest();
 
         return convertToAssets(balanceOf(account)) + this.getBorrowBalance(account);
     }
@@ -187,7 +193,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
 
     /// @notice accrue interest over all loands 
     // that the vault gave out
-    function accrueInterest() external returns(uint interestedCharged) {
+    function accrueInterest() internal returns(uint interestedCharged) {
         if (block.timestamp == lastAccrualOfInterest) {
             // no update to be made
             return 0;
@@ -199,7 +205,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
         }
 
         // get the current APY
-        uint currentAPY = this.getInterest();
+        uint currentAPY = getInterest();
 
         // 1 + APY / 100 = percentage multiplier
         // currentAPY to % =/ 10_000 
@@ -228,7 +234,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
 
     /// @notice returns the APY in exponential form
     /// @dev this method calls the interest model
-    function getInterest() external view returns (uint) {
+    function getInterest() internal view returns (uint) {
         // call the interest model to get the current APY
         return IInterestModel(interestModel).getInterestRate(cashReserves, totalBorrows);
     }
@@ -239,7 +245,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
     /// @return rate the exchange rate between borrow shares and total amouunt borrowed
     function getInterestRate() public returns (uint) {
         // accrue interest
-        this.accrueInterest();
+        accrueInterest();
 
         if(totalBorrowShares == 0) {
             return expScale;
@@ -294,7 +300,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
     /// @param amountUnderlying the amount to repay
     function repay(address account, uint256 amountUnderlying) external lock updateReward(account) {
          // calculate reserves
-        this.accrueInterest();
+        accrueInterest();
 
         // get exchange rate from borrow shares to underlying
         uint rate = getInterestRate();
@@ -328,7 +334,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
     /// @param shares the amount of shares to repay
     function repayShares(address account, uint256 shares) external lock updateReward(account) {
          // calculate reserves
-        this.accrueInterest();
+        accrueInterest();
 
         // get exchange rate from borrow shares to underlying
         uint rate = getInterestRate();
@@ -363,7 +369,7 @@ contract MToken is IDebtMarket, ERC4626, Ownable, Pausable, Rewards {
     /// @notice get the usd value of deposits for a LP
     /// @param depositor the LP account
     function getDepositBalanceUsd(address depositor) public returns (uint256) {
-        this.accrueInterest();
+        accrueInterest();
 
         // get the quote from chainlink
         AggregatorV3Interface tokenAggr = AggregatorV3Interface(oracle);

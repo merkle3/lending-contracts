@@ -26,6 +26,9 @@ abstract contract IDebtMarket {
     // get the collateral value of a user
     function getCollateralUsd(address borrower) virtual external view returns (uint256) {}
 
+    // get the max borrow that this market allows
+    function getMaxBorrowUsd(address borrower) virtual external view returns (uint256) {}
+
     // a function to liquidate assets, that can only be called by the controller
     function liquidate(address borrower, address liquidator, bytes memory data) virtual external onlyController {}
 }

@@ -6,10 +6,11 @@ import "forge-std/console.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeTransferLib} from "../libraries/SafeTransferLib.sol";
 import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
+import {Lockable} from "../utils/Lockable.sol";
 
 /// @notice Minimal ERC4626 tokenized Vault implementation.
 /// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/mixins/ERC4626.sol)
-abstract contract ERC4626 is ERC20 {
+abstract contract ERC4626 is ERC20, Lockable {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -45,7 +46,7 @@ abstract contract ERC4626 is ERC20 {
                         DEPOSIT/WITHDRAWAL LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function deposit(uint256 assets, address receiver) public virtual returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) public virtual lock returns (uint256 shares) {
         updateInterest();
 
         // Check for rounding error since we round down in previewDeposit.
@@ -63,7 +64,7 @@ abstract contract ERC4626 is ERC20 {
         afterDeposit(assets, shares);
     }
 
-    function mint(uint256 shares, address receiver) public virtual returns (uint256 assets) {
+    function mint(uint256 shares, address receiver) public virtual lock returns (uint256 assets) {
         updateInterest();
 
         assets = previewMint(shares); // No need to check for rounding error, previewMint rounds up.
@@ -84,7 +85,7 @@ abstract contract ERC4626 is ERC20 {
         uint256 assets,
         address receiver,
         address owner
-    ) public virtual returns (uint256 shares) {
+    ) public virtual lock returns (uint256 shares) {
         updateInterest();
 
         shares = previewWithdraw(assets); // No need to check for rounding error, previewWithdraw rounds up.
@@ -110,7 +111,7 @@ abstract contract ERC4626 is ERC20 {
         uint256 shares,
         address receiver,
         address owner
-    ) public virtual returns (uint256 assets) {
+    ) public virtual lock returns (uint256 assets) {
         updateInterest();
 
         if (msg.sender != owner) {

@@ -82,8 +82,8 @@ contract DeployPolygon is Script {
         uniswapAssets.activatePools(pools);
 
         // 4. Add the markets to the controller
-        controller.addDebtMarket(address(uniswapAssets), 8_000);
-        controller.addDebtMarket(address(usdcVault), 8_000);
+        controller.addDebtMarket(address(uniswapAssets));
+        controller.addDebtMarket(address(usdcVault));
 
         vm.stopBroadcast();
     }

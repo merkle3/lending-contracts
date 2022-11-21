@@ -33,7 +33,7 @@ contract MTokenTest is Test {
     }
 
     function testAddDebtMarket() public {
-        controller.addDebtMarket(address(tokenMarket), 8_000);
+        controller.addDebtMarket(address(tokenMarket));
 
         assertEq(controller.totalDebtMarkets(), 1);
     }

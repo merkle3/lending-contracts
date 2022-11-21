@@ -23,8 +23,10 @@ import {IAssetClass} from "../interfaces/IAssetClass.sol";
 import {IController} from "../interfaces/IController.sol";
 import {AggregatorV3Interface} from "../interfaces/AggregatorV3Interface.sol";
 import {Multicall} from "../utils/Multicall.sol";
+import {Lockable} from "../utils/Lockable.sol";
 import {IMerkleCallback} from "../interfaces/IMerkleCallback.sol";
 import {BytesLib} from '../libraries/BytesLib.sol';
+import {FixedPointMathLib} from '../libraries/FixedPointMathLib.sol';
 
 contract UniswapV3 is
     IAssetClass,
@@ -32,12 +34,14 @@ contract UniswapV3 is
     IERC721Receiver,
     Ownable,
     Multicall,
+    Lockable,
     Pausable
 {
     // safe math library
     using SafeMath for uint256;
     using Address for address;
     using BytesLib for bytes;
+    using FixedPointMathLib for uint256;
 
     // uniswapv3 addresses
     INonfungiblePositionManager constant public UniswapNftManager =
@@ -150,7 +154,7 @@ contract UniswapV3 is
     // from the position, that isn't part of the positions.
     // These are the fees that the position has generated in uniswap v3.
     function getCollectableTokens(uint256 tokenId)
-        public
+        internal
         view
         returns (uint128 tokensOwed0, uint128 tokensOwed1)
     {
@@ -172,7 +176,7 @@ contract UniswapV3 is
 
     // get the amount of tokens a position is made of
     function getPositionTokens(uint256 tokenId)
-        public
+        internal
         view
         returns (
             address,
@@ -268,11 +272,10 @@ contract UniswapV3 is
             address token1,
             uint256 amount0,
             uint256 amount1
-        ) = this.getPositionTokens(tokenId);
+        ) = getPositionTokens(tokenId);
 
         // get the fees not in the position
-        (uint128 collectibleAmount0, uint128 collectibleAmount1) = this
-            .getCollectableTokens(tokenId);
+        (uint128 collectibleAmount0, uint128 collectibleAmount1) = getCollectableTokens(tokenId);
 
         // add them up
         amount0 = amount0.add(collectibleAmount0);
@@ -343,6 +346,23 @@ contract UniswapV3 is
         return totalCollateral;
     }
 
+    // get the max borrow
+    function getMaxBorrowUsd(address borrower)
+        public
+        view
+        override
+        returns (uint256)
+    {
+        // get the total collateral
+        uint256 totalCollateral = this.getCollateralUsd(borrower);
+
+        // calculate the max borrow
+        uint256 maxBorrow = totalCollateral.mulDivDown(8_000, 10_000);
+
+        // return the max borrow
+        return maxBorrow;
+    }
+
     // deposits a uniswapv3 positions into this 
     // asset class
     function mint(
@@ -352,7 +372,7 @@ contract UniswapV3 is
         uint256 tokenId,
         // callback for the borrower callback (if any)
         bytes memory callback
-    ) public whenNotPaused returns (bool) {
+    ) public whenNotPaused lock returns (bool) {
         // get the current owner of the position
         address owner = UniswapNftManager.ownerOf(tokenId); // save SLOADs
 
@@ -434,7 +454,7 @@ contract UniswapV3 is
         uint256 tokenId,
         // callback for the burn callback (if any)
         bytes memory callback
-    ) public returns (bool) {
+    ) public lock returns (bool) {
         // get the current owner of the position
         address owner = this.ownerOf(tokenId); // save SLOADs
 
@@ -534,7 +554,7 @@ contract UniswapV3 is
         address borrower,
         address liquidator,
         bytes memory data
-    ) public override onlyController {
+    ) public override lock onlyController {
         // cast the bytes in a token id
         uint256 tokenId = data.toUint256(0);
 

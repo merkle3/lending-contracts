@@ -36,8 +36,8 @@ contract InterestTest is Test {
             address(interestModel),
             1e18);
 
-        controller.addDebtMarket(address(mockAsset), 8_000);
-        controller.addDebtMarket(address(tokenMarket), 8_000);
+        controller.addDebtMarket(address(mockAsset));
+        controller.addDebtMarket(address(tokenMarket));
 
         // fill the vault
         mockToken.mint(address(1), 10_000 * Constant.ONE);

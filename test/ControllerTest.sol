@@ -33,8 +33,8 @@ contract ControllerTest is Test {
             address(interestModel),
             1e18);
 
-        controller.addDebtMarket(address(mockAsset), 8_000);
-        controller.addDebtMarket(address(tokenMarket), 8_000);
+        controller.addDebtMarket(address(mockAsset));
+        controller.addDebtMarket(address(tokenMarket));
 
         mockOracle.updateAnswer(1e8);
     }
@@ -46,32 +46,12 @@ contract ControllerTest is Test {
 
     function testEmptyColletarls(address addr) public {
         assertEq(controller.getTotalBorrowUsd(addr), 0);
-        assertEq(controller.getTotalCollateralUsd(addr), 0);
+        assertEq(controller.getMaxBorrowUsd(addr), 0);
         assertEq(controller.isHealthy(addr), true);
     }
 
     function testSetPlatformFee(uint256 fee) public {
         controller.setPlatformFee(fee);
         assertEq(controller.platformFee(), fee);
-    }
-
-    event CollateralRateChanged(address indexed tokenMarket, uint256 rate);
-
-    function testChangeCollateral() public {
-        // set a collateral
-        mockAsset.setAmountUsd(address(2), 10_000);
-
-        // check that the default 80% is applied
-        assertEq(controller.getTotalCollateralUsd(address(2)), 8_000 * 1e8);
-
-        // expect the emittion
-        vm.expectEmit(true, false, false, false);
-        emit CollateralRateChanged(address(mockAsset), 4_000);
-
-        // change the collateral usage of mock asset
-        controller.setCollateralRate(address(mockAsset), 4_000);
-
-        // make sure the new collateral is half
-        assertEq(controller.getTotalCollateralUsd(address(2)), 4_000 * 1e8);
     }
 }

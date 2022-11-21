@@ -39,7 +39,7 @@ contract UniswapV3Integration is Test {
 
         assertEq(uniswapV3.activatedPools(Constant.WETH_USDC_POOL), true);  
 
-        controller.addDebtMarket(address(uniswapV3), 8_000);
+        controller.addDebtMarket(address(uniswapV3));
 
         // 1. we need to get some weth
         vm.prank(Constant.BIG_ETH_BALANCE_OWNER);
