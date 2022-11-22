@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC3156FlashLender} from '../interfaces/IERC3156FlashLender.sol';
+import {IERC3156FlashBorrower} from '../interfaces/IERC3156FlashBorrower.sol';
 
 // the merkle token is a enhanced token that allows for the 
 // owner the mint and burn tokens at will
@@ -35,7 +36,7 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
     }
 
     /// @dev mint tokens
-    /// @param account the account to mint to
+    /// @param to the account to mint to
     /// @param amount the amount to mint
     function mint(address to, uint256 amount) public {
         // check if the sender has enough allowance
