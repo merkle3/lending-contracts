@@ -17,6 +17,18 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
     // flash loan fee
     uint256 public flashLoanFee;
 
+    // mint event
+    event Mint(address indexed minter, address indexed to, uint256 amount);
+    
+    // mint allowance event
+    event MintAllowance(address indexed minter, uint256 amount);
+
+    // flash loan fee change
+    event FlashLoanFee(uint256 amount);
+
+    // flash loan 
+    event FlashLoan(address indexed receiver, uint256 amount, uint256 fee);
+
     constructor() ERC20("Merkle", "MKL") {
         // transfer ownership
         transferOwnership(msg.sender);
@@ -34,6 +46,9 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
 
         // mint the tokens
         _mint(to, amount);
+
+        // log the event
+        emit Mint(msg.sender, to, amount);
     }
 
     /// ---- FLASH MINT -----------
@@ -94,6 +109,9 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
         // send the fee
         _mint(feeRecipient, fee);
 
+        // log the event
+        emit FlashLoan(address(receiver), amount, fee);
+
         // return true
         return true;
     }
@@ -105,6 +123,9 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
     function setMintAllowance(address account, uint256 amount) public onlyOwner {
         // set the allowance
         mintAllowances[account] = amount;
+
+        // log the event
+        emit MintAllowance(account, amount);
     }
 
     /// @dev set the floash loan fee
@@ -112,5 +133,8 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
     function setFlashLoanFee(uint256 fee) public onlyOwner {
         // set the fee
         flashLoanFee = fee;
+
+        // log the event
+        emit FlashLoanFee(fee);
     }
 }
