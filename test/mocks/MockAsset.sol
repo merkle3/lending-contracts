@@ -19,8 +19,8 @@ contract MockAsset is IAssetClass {
     }
 
     // get the total collateral with all assets
-    function getCollateralUsd(address borrower) override virtual public view returns (uint256) {
-        return amountUsd[borrower] * 1e8;
+    function getMaxBorrowUsd(address borrower) override virtual public view returns (uint256) {
+        return amountUsd[borrower] * 1e8 * 8_000 / 10_000;
     }
 
     function liquidate(address from, address to, bytes memory data) override virtual public onlyController {
