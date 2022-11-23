@@ -5,10 +5,11 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC3156FlashLender} from '../interfaces/IERC3156FlashLender.sol';
 import {IERC3156FlashBorrower} from '../interfaces/IERC3156FlashBorrower.sol';
+import {Lockable} from '../utils/Lockable.sol';
 
 // the merkle token is a enhanced token that allows for the 
 // owner the mint and burn tokens at will
-contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
+contract MerkleToken is ERC20, Ownable, IERC3156FlashLender, Lockable {
     // minting allowances
     mapping(address => uint256) public mintAllowances;
 
@@ -30,9 +31,12 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
     // flash loan 
     event FlashLoan(address indexed receiver, uint256 amount, uint256 fee);
 
-    constructor() ERC20("Merkle", "MKL") {
+    constructor(address flashLoanFeeRecipient) ERC20("Merkle", "MKL") {
         // transfer ownership
         transferOwnership(msg.sender);
+
+        // set flashloan fee recipient
+        feeRecipient = flashLoanFeeRecipient;
     }
 
     /// @dev mint tokens
@@ -64,8 +68,8 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
     ) override external view returns (uint256) {
         if(token != address(this)) return 0;
 
-        // return the maximum of uint256
-        return type(uint256).max;
+        // return the total supply
+        return this.totalSupply();
     }
 
     /// @notice The fee to be charged for a given loan.
@@ -92,7 +96,7 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
         address token,
         uint256 amount,
         bytes calldata data
-    ) override external returns (bool) {
+    ) override external lock returns (bool) {
         if(token != address(this)) revert("WRONG_TOKEN");
 
         // calculate the fee
@@ -137,5 +141,12 @@ contract MerkleToken is ERC20, Ownable, IERC3156FlashLender {
 
         // log the event
         emit FlashLoanFee(fee);
+    }
+
+    /// @dev set the flash loan fee recipient
+    /// @param recipient the recipient to set
+    function setFlashLoanFeeRecipient(address recipient) public onlyOwner {
+        // set the recipient
+        feeRecipient = recipient;
     }
 }

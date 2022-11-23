@@ -8,6 +8,7 @@ import {Controller} from '../src/Controller.sol';
 import {MToken} from '../src/markets/MToken.sol';
 import {UniswapV3} from '../src/assets/UniswapV3.sol';
 import {BaseInterestModel} from '../src/interest/BaseInterestModel.sol';
+import {MerkleToken} from '../src/token/Merkle.sol';
 
 // deploy merkle on ethereum
 contract DeployEth is Script {
@@ -29,7 +30,12 @@ contract DeployEth is Script {
     // dai oracle
     address public constant DAI_ORACLE = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
 
+    // reward amount
+    uint256 public constant REWARD_AMOUNT = 5000000000000000000000000;
+
     function run() external {
+        address HARDWARE_WALLET = vm.envAddress("HARDWARE_WALLET");
+
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
@@ -87,6 +93,19 @@ contract DeployEth is Script {
         // 4. Add the markets to the controller
         controller.addDebtMarket(address(uniswapAssets));
         controller.addDebtMarket(address(usdcVault));
+
+        // 5. create merkle token
+        MerkleToken mkl = new MerkleToken(HARDWARE_WALLET);
+
+        // mint to vault
+        mkl.setMintAllowance(vm.envAddress("DEPLOYER"), REWARD_AMOUNT);
+        mkl.mint(address(usdcVault), REWARD_AMOUNT);
+
+        // 6. transfer ownership to hardware wallet
+        controller.transferOwnership(HARDWARE_WALLET);
+        uniswapAssets.transferOwnership(HARDWARE_WALLET);
+        usdcVault.transferOwnership(HARDWARE_WALLET);
+        mkl.transferOwnership(HARDWARE_WALLET);
 
         vm.stopBroadcast();
     }
