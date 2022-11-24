@@ -57,10 +57,10 @@ contract DeployPolygon is Script {
             // the usdc token decimals
             1e6
         );
+        usdcVault.setFeeCollector(HARDWARE_WALLET);
 
         // 3. deploy and configure the uniswapv3 asset
         UniswapV3 uniswapAssets = new UniswapV3(address(controller));
-        uniswapAssets.setFeeCollector(HARDWARE_WALLET);
 
         // set the oracles
         uniswapAssets.setOracle(WETH, ETH_ORACLE); // ETH
@@ -92,7 +92,7 @@ contract DeployPolygon is Script {
         controller.addDebtMarket(address(usdcVault));
 
         // 5. create merkle token
-        MerkleToken mkl = new MerkleToken(HARDWARE_WALLET);
+        MerkleToken mkl = new MerkleToken();
 
         // mint to vault
         mkl.setMintAllowance(vm.envAddress("DEPLOYER"), REWARD_AMOUNT);
