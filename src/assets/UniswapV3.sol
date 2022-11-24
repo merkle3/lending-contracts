@@ -57,7 +57,7 @@ contract UniswapV3 is
 
     // scale up for some tokens
     mapping(address => uint256) tokenScaleFactor;
-    
+
     // minimum deposit in usd
     // default to $200
     uint256 public minDeposit = 200 * 10**8;
@@ -67,6 +67,9 @@ contract UniswapV3 is
 
     // when a pool is deactivated
     event PausedPool(address pool);
+
+    // when a asset is liquidated
+    event Liquidated(address indexed borrower, address liquidator, uint256 tokenId);
 
     constructor(
         address _controller
@@ -565,5 +568,8 @@ contract UniswapV3 is
 
         // burn the position in our system
         _burn(tokenId);
+
+        // emit the event
+        emit Liquidated(borrower, liquidator, tokenId);
     }
 }
