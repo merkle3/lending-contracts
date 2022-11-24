@@ -33,7 +33,6 @@ contract UniswapV3 is
     ERC721Enumerable,
     IERC721Receiver,
     Ownable,
-    Multicall,
     Lockable,
     Pausable
 {
@@ -58,7 +57,7 @@ contract UniswapV3 is
 
     // scale up for some tokens
     mapping(address => uint256) tokenScaleFactor;
-
+    
     // minimum deposit in usd
     // default to $200
     uint256 public minDeposit = 200 * 10**8;

@@ -54,9 +54,6 @@ contract MToken is
     // to calculate interest
     uint public constant secondsPerYear = 31_540_000;
 
-    // flashloan fee (0.01%)
-    uint constant flashloanFee = 1;
-
     // x% of all interest goes to platform
     uint public collectableFee = 0;
 
@@ -113,6 +110,14 @@ contract MToken is
         // transfer asset to fee collector
         asset.safeTransfer(feeCollector, amount);
     }
+
+    /// @notice change the fee collector
+    /// @param newFeeCollector the new fee collector
+    function setFeeCollector(address newFeeCollector) public onlyOwner {
+        feeCollector = newFeeCollector;
+    }
+
+    // ---------- ERC4626 FUNCTIONS ----------
 
     /// @notice override max withdraw based on cash reserves
     /// @param owner the account of the LP

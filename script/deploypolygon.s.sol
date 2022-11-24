@@ -60,6 +60,7 @@ contract DeployPolygon is Script {
 
         // 3. deploy and configure the uniswapv3 asset
         UniswapV3 uniswapAssets = new UniswapV3(address(controller));
+        uniswapAssets.setFeeCollector(HARDWARE_WALLET);
 
         // set the oracles
         uniswapAssets.setOracle(WETH, ETH_ORACLE); // ETH

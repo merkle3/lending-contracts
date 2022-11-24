@@ -20,7 +20,7 @@ import {Lockable} from './utils/Lockable.sol';
 
 // TODO: put a re-entrency lock on functions with callbacks
 
-contract Controller is Ownable, Pausable, Lockable, IController {
+contract Controller is Ownable, Lockable, IController {
     using FixedPointMathLib for uint256;
 
     // list of debt markets
