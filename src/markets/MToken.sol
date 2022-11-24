@@ -210,7 +210,7 @@ contract MToken is
         }
 
         // get the current APY
-        uint currentAPY = getInterest();
+        uint currentAPY = this.getInterest();
 
         // 1 + APY / 100 = percentage multiplier
         // currentAPY to % =/ 10_000 
@@ -239,7 +239,7 @@ contract MToken is
 
     /// @notice returns the APY in exponential form
     /// @dev this method calls the interest model
-    function getInterest() view returns (uint) {
+    function getInterest() public view returns (uint) {
         // call the interest model to get the current APY
         return IInterestModel(interestModel).getInterestRate(cashReserves, totalBorrows);
     }

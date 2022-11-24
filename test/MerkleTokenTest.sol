@@ -10,7 +10,7 @@ contract MerkleTokenTest is Test {
     MerkleToken public token;
 
     function setUp() public {
-        token = new MerkleToken(address(1));
+        token = new MerkleToken();
         token.transferOwnership(address(2));
     }
 
