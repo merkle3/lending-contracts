@@ -199,7 +199,7 @@ abstract contract Rewards is Ownable {
         UserInfo storage user = userInfo[msg.sender];
 
         // check the user info
-        uint256 pendingRewards = this.getPendingRewards(msg.sender);        
+        uint256 pendingRewards = this.getPendingRewards(msg.sender);
 
         // reset the zeroing
         user.rewardDistributed = user.shares * rewardsPerShare;

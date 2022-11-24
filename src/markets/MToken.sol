@@ -239,7 +239,7 @@ contract MToken is
 
     /// @notice returns the APY in exponential form
     /// @dev this method calls the interest model
-    function getInterest() internal view returns (uint) {
+    function getInterest() view returns (uint) {
         // call the interest model to get the current APY
         return IInterestModel(interestModel).getInterestRate(cashReserves, totalBorrows);
     }
