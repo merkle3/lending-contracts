@@ -107,4 +107,32 @@ contract BorrowTest is Test {
         vm.prank(address(2));
         tokenMarket.borrow(borrowAmount * Constant.ONE, address(2));
     }
+
+    function testBorrowCap(uint amount) public {
+        vm.assume(amount > 1);
+        vm.assume(amount < 10_000);
+
+        mockAsset.setAmountUsd(address(2), 10_000_000_000);
+
+        tokenMarket.setMaxBorrow(amount * Constant.ONE - 1);
+
+        vm.expectRevert(bytes("MAX_BORROW"));
+
+        // try to borrow more than the max
+        vm.prank(address(2));
+        tokenMarket.borrow(amount * Constant.ONE, address(2));
+    }
+
+    function testBorrowUnderCap(uint amount) public {
+        vm.assume(amount > 1);
+        vm.assume(amount < 10_000);
+
+        mockAsset.setAmountUsd(address(2), 10_000_000_000);
+
+        tokenMarket.setMaxBorrow(amount * Constant.ONE);
+
+        // try to borrow more than the max
+        vm.prank(address(2));
+        tokenMarket.borrow(amount * Constant.ONE, address(2));
+    }
 }

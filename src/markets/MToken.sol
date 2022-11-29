@@ -38,6 +38,9 @@ contract MToken is
 
     // total borrow shares
     uint totalBorrowShares;
+    
+    // maximum borrowable
+    uint public maxBorrowable;
 
     // total borrow 
     uint public totalBorrows;
@@ -87,6 +90,9 @@ contract MToken is
         feeCollector = msg.sender;
         tokenScale = _tokenScale;
 
+        // by default, there is no borrow limit
+        maxBorrowable = type(uint).max;
+
         // register owner
         transferOwnership(msg.sender);
     }
@@ -115,6 +121,12 @@ contract MToken is
     /// @param newFeeCollector the new fee collector
     function setFeeCollector(address newFeeCollector) public onlyOwner {
         feeCollector = newFeeCollector;
+    }
+
+    /// @notice change the borrow cap
+    /// @param newCap the new borrow cap
+    function setMaxBorrow(uint newCap) public onlyOwner {
+        maxBorrowable = newCap;
     }
 
     // ---------- ERC4626 FUNCTIONS ----------
@@ -271,6 +283,9 @@ contract MToken is
     function borrow(uint256 amountUnderlying, address receiver) external lock updateReward(msg.sender) whenNotPaused {
         // check if there is enough cash
         require(cashReserves >= amountUnderlying, "NO_RESERVES");
+
+        // make sure we are under the borrow maximum
+        require(totalBorrows + amountUnderlying <= maxBorrowable, "MAX_BORROW");
 
         // don't send to zero address
         require(receiver != address(0), "INVALID_RECEIVER");
