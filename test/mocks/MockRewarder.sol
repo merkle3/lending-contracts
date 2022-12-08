@@ -19,11 +19,11 @@ contract MockRewarder is Rewards {
         totalSupply = total;
     }
 
-    function rewardSupplyBasis(address account) external override view returns (uint256) {
+    function rewardBalanceOf(address account) external override view returns (uint256) {
         return supplyForAccount[account];
     }
 
-    function totalRewardSupplyBasis() external override view returns (uint256) {
+    function totalRewardSupply() external override view returns (uint256) {
         return totalSupply;
     }
 

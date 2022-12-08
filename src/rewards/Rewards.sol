@@ -90,7 +90,7 @@ abstract contract Rewards is Ownable {
     /// @return totalRewardForDelta amount of reward per share
     function rewardsPerShareForTimeDelta(uint256 timeDelta) internal returns (uint256 totalRewardForDelta) {
         // calculate the rewards per share
-        uint256 totalSupply = this.totalRewardSupplyBasis();
+        uint256 totalSupply = this.totalRewardSupply();
 
         if (totalSupply != 0) {
             totalRewardForDelta = timeDelta.mulDivDown(rewardPerSecond * rewardExpScale, totalSupply);
@@ -100,11 +100,11 @@ abstract contract Rewards is Ownable {
     }  
 
     // a function that returns the total reward supply
-    function totalRewardSupplyBasis() external virtual returns (uint256);
+    function totalRewardSupply() external virtual returns (uint256);
 
     // a function that returns how much of the reward supply
     // is available for a given account
-    function rewardSupplyBasis(address account) external virtual returns (uint256);
+    function rewardBalanceOf(address account) external virtual returns (uint256);
 
     /// @notice update the rewards for an account
     /// @param account the account to update
@@ -142,13 +142,10 @@ abstract contract Rewards is Ownable {
             UserInfo storage user = userInfo[account];
 
             // shares owned by the user
-            uint256 shares = this.rewardSupplyBasis(account);
+            uint256 shares = this.rewardBalanceOf(account);
             
             // if user had deposited
             if (user.shares == 0) {
-                // set the user shares to the supply basis
-                user.shares = shares;
-
                 // set the reward debt to not collect rewards from other members
                 user.rewardDistributed = rewardsPerShare * shares;
             }

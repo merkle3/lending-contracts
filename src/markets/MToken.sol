@@ -191,7 +191,7 @@ contract MToken is
 
     // ----- REWARD FUNCTIONS -----
     /// @notice override the reward function to accrue interest
-    function totalRewardSupplyBasis() external override returns (uint256) {
+    function totalRewardSupply() external override returns (uint256) {
         accrueInterest();
 
         // total borrows is both owned by lenders and borrowers
@@ -200,7 +200,7 @@ contract MToken is
 
     /// @notice how much of the reward is owned by the user
     /// @param account the user whose reward to check
-    function rewardSupplyBasis(address account) external virtual override returns (uint256) {
+    function rewardBalanceOf(address account) external virtual override returns (uint256) {
         accrueInterest();
 
         return convertToAssets(balanceOf(account)) + this.getBorrowBalance(account);
