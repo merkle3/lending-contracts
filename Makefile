@@ -16,3 +16,6 @@ lcov.info:
 # run the forge script to deploy on eth
 deploy.local:
 	forge script script/deployeth.s.sol:DeployEth --fork-url http://localhost:8545 --broadcast
+
+fork:
+	anvil --fork-url ${FORK_URL}

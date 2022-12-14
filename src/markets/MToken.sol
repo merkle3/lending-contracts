@@ -79,10 +79,10 @@ contract MToken is
         address _interestModel,
         uint _tokenScale
         // TODO: set reward token
-        // reward 5M tokens over 3 years
-        // 3 years = 94608000 seconds
-        /// 5M = 5000000000000000000000000 WEI
-    ) ERC4626(ERC20(assetAddress), "Merkle USDC", "mUSDC") Rewards(ERC20(address(0)), block.timestamp, 5000000000000000000000000, 94608000) IDebtMarket(controller) {
+        // reward 1M tokens over 1 year
+        // 1 years = 31540000 seconds
+        /// 1M = 1000000000000000000000000 WEI
+    ) ERC4626(ERC20(assetAddress), "Merkle USDC", "mUSDC") Rewards(ERC20(address(0)), block.timestamp, 1000000000000000000000000, 31540000) IDebtMarket(controller) {
         _controller = controller;
         lastAccrualOfInterest = block.timestamp;
         oracle = _oracle;

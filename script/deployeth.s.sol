@@ -46,6 +46,7 @@ contract DeployEth is Script {
         // deploy an interest model
         BaseInterestModel interestModel = new BaseInterestModel();
 
+        // usdc vault
         MToken usdcVault = new MToken(
             // the controller
             address(controller),
@@ -59,6 +60,21 @@ contract DeployEth is Script {
             1e6
         );
         usdcVault.setFeeCollector(HARDWARE_WALLET);
+
+        // weth vault
+        MToken wethVault = new MToken(
+            // the controller
+            address(controller),
+            // the usdc address
+            WETH,
+            // the oracle address
+            ETH_ORACLE,
+            // the interest model
+            address(interestModel),
+            // the weth token decimals
+            1e18
+        );
+        wethVault.setFeeCollector(HARDWARE_WALLET);
 
         // 3. deploy and configure the uniswapv3 asset
         UniswapV3 uniswapAssets = new UniswapV3(address(controller));
@@ -94,6 +110,7 @@ contract DeployEth is Script {
         // 4. Add the markets to the controller
         controller.addDebtMarket(address(uniswapAssets));
         controller.addDebtMarket(address(usdcVault));
+        controller.addDebtMarket(address(wethVault));
 
         // 5. create merkle token
         MerkleToken mkl = new MerkleToken();
