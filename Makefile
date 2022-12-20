@@ -17,5 +17,8 @@ lcov.info:
 deploy.local:
 	forge script script/deployeth.s.sol:DeployEth --fork-url http://localhost:8545 --broadcast
 
+deploy.eth:
+	forge script script/deployeth2.s.sol:DeployEth --rpc-url ${FORK_URL} --resume
+
 fork:
 	anvil --fork-url ${FORK_URL}
