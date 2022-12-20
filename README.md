@@ -1,6 +1,6 @@
 ![Logo](public/logo.png)
 
-![Test](https://shields.io/github/workflow/status/merkle3/lending-contracts/test) ![Social](https://img.shields.io/github/stars/merkle3/lending-contracts)
+![Test](https://shields.io/github/actions/workflow/status/merkle3/lending-contracts/test.yml?branch=main) ![Social](https://img.shields.io/github/stars/merkle3/lending-contracts)
 
 **Merkle is live on mainnet**. [Open app](https://lending.usemerkle.com) - [Join us on discord](https://discord.gg/Q9Dc7jVX6c).
 
